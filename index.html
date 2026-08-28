@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#07070d"
+  >
+
+  <meta
+    name="description"
+    content="AnonyBoX - Discute anonymement dans tes groupes."
+  >
+
+  <title>AnonyBoX</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link
+    rel="manifest"
+    href="manifest.json"
+  >
+
+</head>
+
+
+<body>
+
+<!-- =====================================================
+     APPLICATION
+===================================================== -->
+
+<main
+  id="app"
+  class="app"
+>
+
+
+  <!-- ===================================================
+       ÉCRAN ACCUEIL
+  ==================================================== -->
+
+  <section
+    id="home-screen"
+    class="screen home-screen"
+  >
+
+
+    <!-- HEADER -->
+
+    <header class="app-header">
+
+      <div class="brand">
+
+        <div class="logo">
+          A
+        </div>
+
+        <div class="brand-text">
+
+          <p class="welcome">
+            Bienvenue sur
+          </p>
+
+          <h1>
+            AnonyBoX
+          </h1>
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="profile-button"
+        class="profile-button"
+        type="button"
+        aria-label="Ouvrir le profil"
+      >
+
+        <span>
+          
+        </span>
+
+      </button>
+
+    </header>
+
+
+    <!-- =================================================
+         HERO
+    ================================================== -->
+
+    <section
+      class="hero"
+      aria-label="Présentation"
+    >
+
+      <div class="hero-glow"></div>
+
+      <div class="hero-icon">
+        
+      </div>
+
+      <p class="hero-label">
+        ESPACE ANONYME
+      </p>
+
+      <h2>
+        Parle librement.
+        <br>
+        <span>Reste anonyme.</span>
+      </h2>
+
+      <p class="hero-description">
+        Crée ou rejoins un groupe et commence à discuter.
+      </p>
+
+    </section>
+
+
+    <!-- =================================================
+         ACTIONS PRINCIPALES
+    ================================================== -->
+
+    <section
+      class="actions"
+      aria-label="Actions"
+    >
+
+
+      <!-- CRÉER -->
+
+      <button
+        id="create-group-button"
+        class="main-action"
+        type="button"
+      >
+
+        <span class="action-icon">
+          
+        </span>
+
+        <span class="action-text">
+
+          <strong>
+            Créer un groupe
+          </strong>
+
+          <small>
+            Créer ton propre espace
+          </small>
+
+        </span>
+
+        <span class="arrow">
+          ›
+        </span>
+
+      </button>
+
+
+      <!-- REJOINDRE -->
+
+      <button
+        id="join-button"
+        class="secondary-action"
+        type="button"
+      >
+
+        <span class="action-icon">
+          
+        </span>
+
+        <span class="action-text">
+
+          <strong>
+            Rejoindre un groupe
+          </strong>
+
+          <small>
+            Entrer avec un code
+          </small>
+
+        </span>
+
+        <span class="arrow">
+          ›
+        </span>
+
+      </button>
+
+
+    </section>
+
+
+    <!-- =================================================
+         APERÇU DES GROUPES
+    ================================================== -->
+
+    <section
+      class="home-groups-preview"
+    >
+
+      <div class="section-title">
+
+        <div>
+
+          <p>
+            TES DISCUSSIONS
+          </p>
+
+          <h2>
+            Groupes récents
+          </h2>
+
+        </div>
+
+        <button
+          id="see-groups-button"
+          class="see-groups-button"
+          type="button"
+        >
+          Voir tout
+        </button>
+
+      </div>
+
+
+      <div
+        id="home-groups-list"
+        class="home-groups-list"
+      >
+
+        <div
+          id="home-empty-groups"
+          class="empty-groups"
+        >
+
+          <div class="empty-icon">
+            
+          </div>
+
+          <h3>
+            Aucun groupe
+          </h3>
+
+          <p>
+            Tes discussions apparaîtront ici.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+  </section>
+
+
+
+  <!-- ===================================================
+       ÉCRAN GROUPES
+  ==================================================== -->
+
+  <section
+    id="groups-screen"
+    class="screen groups-screen"
+  >
+
+
+    <header class="page-header">
+
+      <div>
+
+        <p class="page-label">
+          ESPACE PRIVÉ
+        </p>
+
+        <h2>
+          Mes groupes
+        </h2>
+
+      </div>
+
+
+      <button
+        id="new-group-button"
+        class="header-action"
+        type="button"
+        aria-label="Créer un groupe"
+      >
+        
+      </button>
+
+    </header>
+
+
+    <!-- RECHERCHE -->
+
+    <div class="search-box">
+
+      <span>
+        
+      </span>
+
+      <input
+        id="group-search"
+        type="search"
+        placeholder="Rechercher un groupe..."
+        autocomplete="off"
+      >
+
+    </div>
+
+
+    <!-- LISTE -->
+
+    <div
+      id="groups-list"
+      class="groups"
+    >
+
+
+      <!-- ÉTAT VIDE -->
+
+      <div
+        id="empty-groups"
+        class="empty-groups"
+      >
+
+        <div class="empty-icon">
+          
+        </div>
+
+        <h3>
+          Aucun groupe
+        </h3>
+
+        <p>
+          Tes groupes apparaîtront ici.
+        </p>
+
+        <small>
+          Crée un groupe ou rejoins-en un avec un code.
+        </small>
+
+      </div>
+
+
+    </div>
+
+
+  </section>
+
+
+
+  <!-- ===================================================
+       PAGE DE DISCUSSION PLEIN ÉCRAN
+  ==================================================== -->
+
+  <section
+    id="chat-page"
+    class="chat-page"
+    aria-hidden="true"
+  >
+
+
+    <!-- =================================================
+         BARRE SUPÉRIEURE
+    ================================================== -->
+
+    <header
+      class="chat-topbar"
+    >
+
+
+      <!-- RETOUR -->
+
+      <button
+        id="chat-back-button"
+        class="chat-back-button"
+        type="button"
+        aria-label="Retour aux groupes"
+      >
+
+        <span>
+          
+        </span>
+
+      </button>
+
+
+      <!-- IDENTITÉ DU GROUPE -->
+
+      <button
+        id="chat-group-button"
+        class="chat-group-button"
+        type="button"
+      >
+
+        <div
+          id="chat-avatar"
+          class="chat-avatar"
+        >
+          
+        </div>
+
+
+        <div class="chat-group-info">
+
+          <h2 id="chat-title">
+            Discussion
+          </h2>
+
+          <p id="chat-status">
+            Groupe privé
+          </p>
+
+        </div>
+
+      </button>
+
+
+      <!-- MENU -->
+
+      <button
+        id="chat-menu-button"
+        class="chat-menu-button"
+        type="button"
+        aria-label="Ouvrir le menu"
+        aria-expanded="false"
+      >
+
+        
+
+      </button>
+
+
+    </header>
+
+
+
+    <!-- =================================================
+         MENU 3 POINTS
+    ================================================== -->
+
+    <div
+      id="chat-menu"
+      class="chat-menu"
+      role="menu"
+      style="display:none;"
+    >
+
+
+      <button
+        id="menu-group-info"
+        type="button"
+        role="menuitem"
+      >
+
+        <span>
+          
+        </span>
+
+        <span>
+          Informations du groupe
+        </span>
+
+      </button>
+
+
+      <button
+        id="menu-copy-code"
+        type="button"
+        role="menuitem"
+      >
+
+        <span>
+          
+        </span>
+
+        <span>
+          Copier le code
+        </span>
+
+      </button>
+
+
+      <button
+        id="menu-leave-group"
+        type="button"
+        role="menuitem"
+      >
+
+        <span>
+          
+        </span>
+
+        <span>
+          Quitter le groupe
+        </span>
+
+      </button>
+
+
+      <button
+        id="menu-delete-group"
+        type="button"
+        role="menuitem"
+        style="display:none;"
+      >
+
+        <span>
+          
+        </span>
+
+        <span>
+          Supprimer le groupe
+        </span>
+
+      </button>
+
+
+    </div>
+
+
+
+    <!-- =================================================
+         INFORMATIONS DU GROUPE
+    ================================================== -->
+
+    <div
+      id="group-info-panel"
+      class="group-info-panel"
+      style="display:none;"
+    >
+
+      <div class="group-info-header">
+
+        <button
+          id="group-info-close"
+          type="button"
+          aria-label="Fermer"
+        >
+          
+        </button>
+
+        <h2>
+          Informations
+        </h2>
+
+      </div>
+
+
+      <div class="group-info-content">
+
+        <div
+          id="info-group-avatar"
+          class="large-group-avatar"
+        >
+          
+        </div>
+
+        <h3 id="info-group-name">
+          Groupe
+        </h3>
+
+        <p>
+          Groupe privé et anonyme
+        </p>
+
+
+        <div class="info-row">
+
+          <span>
+             Code
+          </span>
+
+          <strong id="info-group-code">
+            --------
+          </strong>
+
+        </div>
+
+
+        <div class="info-row">
+
+          <span>
+             Membres
+          </span>
+
+          <strong id="info-member-count">
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         ZONE MESSAGES
+    ================================================== -->
+
+    <main
+      id="messages"
+      class="messages"
+    >
+
+
+      <!-- MESSAGE SYSTÈME -->
+
+      <div
+        id="chat-welcome"
+        class="chat-welcome"
+      >
+
+        <div>
+          
+        </div>
+
+        <h3>
+          Bienvenue dans le groupe
+        </h3>
+
+        <p>
+          Les messages de cette discussion apparaîtront ici.
+        </p>
+
+      </div>
+
+
+    </main>
+
+
+
+    <!-- =================================================
+         ZONE ÉCRITURE
+    ================================================== -->
+
+    <footer
+      class="message-area"
+    >
+
+      <div class="message-box">
+
+        <input
+          type="text"
+          id="message-input"
+          placeholder="Écrire un message..."
+          autocomplete="off"
+          maxlength="1000"
+        >
+
+
+        <button
+          id="send-button"
+          type="button"
+          aria-label="Envoyer le message"
+        >
+
+          
+
+        </button>
+
+      </div>
+
+    </footer>
+
+
+  </section>
+
+
+
+  <!-- ===================================================
+       PROFIL
+  ==================================================== -->
+
+  <section
+    id="profile-screen"
+    class="screen profile-screen"
+  >
+
+
+    <header class="page-header">
+
+      <div>
+
+        <p class="page-label">
+          COMPTE
+        </p>
+
+        <h2>
+          Mon profil
+        </h2>
+
+      </div>
+
+    </header>
+
+
+    <div class="profile-card">
+
+      <div class="profile-icon">
+        
+      </div>
+
+      <h3>
+        Identité anonyme
+      </h3>
+
+      <p>
+        Ton pseudo est visible dans tes groupes.
+      </p>
+
+
+      <label
+        for="profile-name"
+        class="input-label"
+      >
+        Ton pseudo
+      </label>
+
+
+      <input
+        type="text"
+        id="profile-name"
+        placeholder="Choisis ton pseudo"
+        maxlength="30"
+        autocomplete="off"
+      >
+
+
+      <button
+        id="save-profile"
+        type="button"
+      >
+        Enregistrer
+      </button>
+
+
+    </div>
+
+
+  </section>
+
+
+
+</main>
+
+
+
+<!-- =====================================================
+     MENU DE CONFIRMATION
+====================================================== -->
+
+<div
+  id="confirm-overlay"
+  class="confirm-overlay"
+  style="display:none;"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="confirm-title"
+>
+
+
+  <div class="confirm-box">
+
+
+    <div
+      id="confirm-icon"
+      class="confirm-icon"
+    >
+      
+    </div>
+
+
+    <h3 id="confirm-title">
+      Confirmation
+    </h3>
+
+
+    <p id="confirm-message">
+      Es-tu sûr de vouloir continuer ?
+    </p>
+
+
+    <div class="confirm-buttons">
+
+
+      <button
+        id="confirm-cancel"
+        class="confirm-cancel"
+        type="button"
+      >
+        Annuler
+      </button>
+
+
+      <button
+        id="confirm-ok"
+        class="confirm-ok"
+        type="button"
+      >
+        OK
+      </button>
+
+
+    </div>
+
+
+  </div>
+
+
+</div>
+
+
+
+<!-- =====================================================
+     NOTIFICATION
+====================================================== -->
+
+<div
+  id="toast"
+  class="toast"
+  role="status"
+  aria-live="polite"
+  style="display:none;"
+>
+
+  <span id="toast-icon">
+    
+  </span>
+
+  <span id="toast-message">
+    Terminé
+  </span>
+
+</div>
+
+
+
+<!-- =====================================================
+     NAVIGATION BASSE
+====================================================== -->
+
+<nav
+  class="bottom-nav"
+  aria-label="Navigation principale"
+>
+
+
+  <!-- ACCUEIL -->
+
+  <button
+    id="home-nav"
+    class="nav-active"
+    type="button"
+  >
+
+    <span>
+      
+    </span>
+
+    <small>
+      Accueil
+    </small>
+
+  </button>
+
+
+  <!-- GROUPES -->
+
+  <button
+    id="groups-nav"
+    type="button"
+  >
+
+    <span>
+      
+    </span>
+
+    <small>
+      Groupes
+    </small>
+
+  </button>
+
+
+  <!-- PROFIL -->
+
+  <button
+    id="profile-nav"
+    type="button"
+  >
+
+    <span>
+      
+    </span>
+
+    <small>
+      Profil
+    </small>
+
+  </button>
+
+
+</nav>
+
+
+
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
+<script
+  type="module"
+  src="script.js"
+></script>
+
+
+</body>
+
+</html>
