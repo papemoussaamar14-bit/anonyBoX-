@@ -1,6 +1,8 @@
 /* =========================================================
    ANONYBOX — SCRIPT.JS
-   VERSION AVEC SAUVEGARDE LOCALE DES GROUPES
+   VERSION COMPLÈTE
+   Firebase + groupes locaux + messages non lus
+   + heures + interface moderne
 ========================================================= */
 
 import { initializeApp } from
@@ -32,16 +34,25 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyAGrCghSoJf7ULhi1Zi1RqeYmt4bE63a3M",
   authDomain: "prjt-78fef.firebaseapp.com",
-  databaseURL: "https://prjt-78fef-default-rtdb.firebaseio.com",
+  databaseURL:
+    "https://prjt-78fef-default-rtdb.firebaseio.com",
   projectId: "prjt-78fef",
-  storageBucket: "prjt-78fef.firebasestorage.app",
+  storageBucket:
+    "prjt-78fef.firebasestorage.app",
   messagingSenderId: "502581952099",
-  appId: "1:502581952099:web:2ae7c0912d073f3b11c256"
+  appId:
+    "1:502581952099:web:2ae7c0912d073f3b11c256"
 };
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getDatabase(app);
+
+const app =
+  initializeApp(firebaseConfig);
+
+const auth =
+  getAuth(app);
+
+const db =
+  getDatabase(app);
 
 
 /* =========================================================
@@ -49,53 +60,90 @@ const db = getDatabase(app);
 ========================================================= */
 
 let currentUser = null;
+
 let currentGroupCode = null;
+
 let currentGroup = null;
 
 let messagesUnsubscribe = null;
+
 let groupsUnsubscribe = null;
 
 let confirmationCallback = null;
 
 
+/*
+   Permet de savoir quels groupes ont été ouverts.
+*/
+
+let unreadMessages = {};
+
+
 /* =========================================================
-   OUTILS
+   OUTIL DOM
 ========================================================= */
 
-const $ = id => document.getElementById(id);
+const $ =
+  id =>
+    document.getElementById(id);
 
 
 /* =========================================================
    TOAST
 ========================================================= */
 
-function toast(message, icon = "✓") {
+function toast(
+  message,
+  icon = "✓"
+) {
 
-  const box = $("toast");
+  const box =
+    $("toast");
 
   if (!box) {
+
     console.log(message);
+
     return;
   }
 
-  const messageBox = $("toast-message");
-  const iconBox = $("toast-icon");
+
+  const messageBox =
+    $("toast-message");
+
+  const iconBox =
+    $("toast-icon");
+
 
   if (messageBox)
-    messageBox.textContent = message;
+    messageBox.textContent =
+      message;
+
 
   if (iconBox)
-    iconBox.textContent = icon;
+    iconBox.textContent =
+      icon;
 
-  box.style.display = "flex";
 
-  clearTimeout(window.anonyToast);
+  box.style.display =
+    "flex";
 
-  window.anonyToast = setTimeout(() => {
 
-    box.style.display = "none";
+  clearTimeout(
+    window.anonyToast
+  );
 
-  }, 2500);
+
+  window.anonyToast =
+    setTimeout(
+      () => {
+
+        box.style.display =
+          "none";
+
+      },
+      2500
+    );
 }
 
 
@@ -106,7 +154,9 @@ function toast(message, icon = "✓") {
 function escapeHTML(value) {
 
   const div =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   div.textContent =
     String(value ?? "");
@@ -116,34 +166,20 @@ function escapeHTML(value) {
 
 
 /* =========================================================
-   ========================================================
-   SAUVEGARDE LOCALE DES GROUPES
-   ========================================================
+   STOCKAGE GROUPES
 ========================================================= */
-
-
-/*
-   Tous les groupes sauvegardés sur ce téléphone
-   sont placés ici.
-
-   Exemple :
-
-   anonybox_groups_UID
-*/
-
 
 function getGroupsStorageKey() {
 
   if (!currentUser)
     return null;
 
-  return `anonybox_groups_${currentUser.uid}`;
+  return (
+    "anonybox_groups_" +
+    currentUser.uid
+  );
 }
 
-
-/* ---------------------------------------------------------
-   RÉCUPÉRER LES GROUPES LOCAUX
---------------------------------------------------------- */
 
 function getLocalGroups() {
 
@@ -153,6 +189,7 @@ function getLocalGroups() {
   if (!key)
     return [];
 
+
   try {
 
     const saved =
@@ -161,18 +198,21 @@ function getLocalGroups() {
     if (!saved)
       return [];
 
+
     const groups =
       JSON.parse(saved);
 
+
     if (!Array.isArray(groups))
       return [];
+
 
     return groups;
 
   } catch (error) {
 
     console.error(
-      "Erreur lecture groupes locaux :",
+      "Erreur lecture groupes :",
       error
     );
 
@@ -181,10 +221,6 @@ function getLocalGroups() {
 }
 
 
-/* ---------------------------------------------------------
-   SAUVEGARDER TOUS LES GROUPES
---------------------------------------------------------- */
-
 function saveLocalGroups(groups) {
 
   const key =
@@ -192,6 +228,7 @@ function saveLocalGroups(groups) {
 
   if (!key)
     return;
+
 
   try {
 
@@ -203,38 +240,34 @@ function saveLocalGroups(groups) {
   } catch (error) {
 
     console.error(
-      "Erreur sauvegarde locale :",
+      "Erreur sauvegarde groupes :",
       error
     );
-
   }
 }
 
 
-/* ---------------------------------------------------------
-   AJOUTER / METTRE À JOUR UN GROUPE
---------------------------------------------------------- */
-
 function saveLocalGroup(group) {
 
-  if (!currentUser || !group?.code)
+  if (
+    !currentUser ||
+    !group?.code
+  )
     return;
+
 
   const groups =
     getLocalGroups();
+
 
   const index =
     groups.findIndex(
       item =>
         item &&
-        item.code === group.code
+        item.code ===
+          group.code
     );
 
-
-  /*
-     On s'assure que le groupe possède
-     bien les informations nécessaires.
-  */
 
   const cleanGroup = {
 
@@ -242,17 +275,22 @@ function saveLocalGroup(group) {
       group.code,
 
     name:
-      group.name || "Groupe",
+      group.name ||
+      "Groupe",
 
     creator:
-      group.creator || "",
+      group.creator ||
+      "",
 
     createdAt:
-      group.createdAt || Date.now(),
+      group.createdAt ||
+      Date.now(),
 
     members:
-      group.members || {
-        [currentUser.uid]: true
+      group.members ||
+      {
+        [currentUser.uid]:
+          true
       }
 
   };
@@ -267,53 +305,241 @@ function saveLocalGroup(group) {
 
   } else {
 
-    groups.push(cleanGroup);
+    groups.push(
+      cleanGroup
+    );
 
   }
 
 
-  saveLocalGroups(groups);
-
-  console.log(
-    "Groupe sauvegardé localement :",
-    cleanGroup.code
+  saveLocalGroups(
+    groups
   );
 }
 
-
-/* ---------------------------------------------------------
-   SUPPRIMER UN GROUPE DE LA SAUVEGARDE LOCALE
---------------------------------------------------------- */
 
 function removeLocalGroup(code) {
 
   if (!code)
     return;
 
+
   const groups =
     getLocalGroups();
+
 
   const filtered =
     groups.filter(
       group =>
         group &&
-        group.code !== code
+        group.code !==
+          code
     );
 
-  saveLocalGroups(filtered);
 
-  console.log(
-    "Groupe retiré de la sauvegarde locale :",
+  saveLocalGroups(
+    filtered
+  );
+}
+
+
+/* =========================================================
+   STOCKAGE DES MESSAGES LUS
+========================================================= */
+
+function getUnreadStorageKey() {
+
+  if (!currentUser)
+    return null;
+
+  return (
+    "anonybox_unread_" +
+    currentUser.uid
+  );
+}
+
+
+function loadUnreadMessages() {
+
+  const key =
+    getUnreadStorageKey();
+
+  if (!key) {
+
+    unreadMessages = {};
+
+    return;
+  }
+
+
+  try {
+
+    const data =
+      localStorage.getItem(
+        key
+      );
+
+
+    unreadMessages =
+      data
+        ? JSON.parse(data)
+        : {};
+
+
+    if (
+      typeof unreadMessages !==
+      "object" ||
+      unreadMessages === null
+    ) {
+
+      unreadMessages = {};
+
+    }
+
+  } catch {
+
+    unreadMessages = {};
+  }
+}
+
+
+function saveUnreadMessages() {
+
+  const key =
+    getUnreadStorageKey();
+
+  if (!key)
+    return;
+
+
+  try {
+
+    localStorage.setItem(
+      key,
+      JSON.stringify(
+        unreadMessages
+      )
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Erreur sauvegarde notifications :",
+      error
+    );
+  }
+}
+
+
+function getLastReadKey(
+  code
+) {
+
+  if (
+    !currentUser ||
+    !code
+  )
+    return null;
+
+
+  return (
+    "anonybox_read_" +
+    currentUser.uid +
+    "_" +
     code
   );
 }
 
 
-/* ---------------------------------------------------------
-   FUSION FIREBASE + LOCAL
---------------------------------------------------------- */
+function getLastRead(
+  code
+) {
 
-function mergeGroups(firebaseGroups) {
+  const key =
+    getLastReadKey(
+      code
+    );
+
+  if (!key)
+    return 0;
+
+
+  return Number(
+    localStorage.getItem(
+      key
+    ) || 0
+  );
+}
+
+
+function setLastRead(
+  code,
+  timestamp
+) {
+
+  const key =
+    getLastReadKey(
+      code
+    );
+
+  if (!key)
+    return;
+
+
+  localStorage.setItem(
+    key,
+    String(timestamp || Date.now())
+  );
+
+
+  unreadMessages[code] =
+    false;
+
+
+  saveUnreadMessages();
+
+
+  renderSavedGroups();
+}
+
+
+function markGroupUnread(
+  code
+) {
+
+  if (!code)
+    return;
+
+
+  unreadMessages[code] =
+    true;
+
+
+  saveUnreadMessages();
+
+
+  updateGroupDisplays();
+}
+
+
+function isGroupUnread(
+  code
+) {
+
+  return (
+    unreadMessages[code] ===
+    true
+  );
+}
+
+
+/* =========================================================
+   FUSION GROUPES
+========================================================= */
+
+function mergeGroups(
+  firebaseGroups
+) {
 
   const localGroups =
     getLocalGroups();
@@ -323,48 +549,45 @@ function mergeGroups(firebaseGroups) {
     new Map();
 
 
-  /*
-     Les groupes Firebase passent en premier.
-  */
+  firebaseGroups.forEach(
+    group => {
 
-  firebaseGroups.forEach(group => {
+      if (
+        group &&
+        group.code
+      ) {
 
-    if (
-      group &&
-      group.code
-    ) {
+        map.set(
+          group.code,
+          group
+        );
 
-      map.set(
-        group.code,
-        group
-      );
-
-    }
-
-  });
-
-
-  /*
-     Ajouter les groupes locaux
-     qui ne sont pas encore dans Firebase.
-  */
-
-  localGroups.forEach(group => {
-
-    if (
-      group &&
-      group.code &&
-      !map.has(group.code)
-    ) {
-
-      map.set(
-        group.code,
-        group
-      );
+      }
 
     }
+  );
 
-  });
+
+  localGroups.forEach(
+    group => {
+
+      if (
+        group &&
+        group.code &&
+        !map.has(
+          group.code
+        )
+      ) {
+
+        map.set(
+          group.code,
+          group
+        );
+
+      }
+
+    }
+  );
 
 
   const merged =
@@ -384,71 +607,6 @@ function mergeGroups(firebaseGroups) {
 }
 
 
-/* ---------------------------------------------------------
-   NETTOYER LES GROUPES LOCAUX
---------------------------------------------------------- */
-
-function cleanLocalGroups(firebaseGroups) {
-
-  const firebaseCodes =
-    new Set(
-      firebaseGroups.map(
-        group => group.code
-      )
-    );
-
-
-  const localGroups =
-    getLocalGroups();
-
-
-  /*
-     On garde les groupes locaux qui ne sont pas
-     encore visibles dans Firebase.
-
-     Cela évite de supprimer immédiatement
-     un groupe pendant une coupure réseau.
-  */
-
-  const cleaned =
-    localGroups.filter(
-      group =>
-        group &&
-        group.code
-    );
-
-
-  /*
-     Supprimer les doublons.
-  */
-
-  const unique =
-    [];
-
-
-  const seen =
-    new Set();
-
-
-  cleaned.forEach(group => {
-
-    if (
-      !seen.has(group.code)
-    ) {
-
-      seen.add(group.code);
-
-      unique.push(group);
-
-    }
-
-  });
-
-
-  saveLocalGroups(unique);
-}
-
-
 /* =========================================================
    NAVIGATION
 ========================================================= */
@@ -459,19 +617,21 @@ function hideMainScreens() {
     "home-screen",
     "groups-screen",
     "profile-screen"
-  ].forEach(id => {
+  ].forEach(
+    id => {
 
-    const element =
-      $(id);
+      const element =
+        $(id);
 
-    if (element) {
+      if (element) {
 
-      element.style.display =
-        "none";
+        element.style.display =
+          "none";
+
+      }
 
     }
-
-  });
+  );
 }
 
 
@@ -481,13 +641,16 @@ function activateNav(id) {
     .querySelectorAll(
       ".bottom-nav button"
     )
-    .forEach(button => {
+    .forEach(
+      button => {
 
-      button.classList.remove(
-        "nav-active"
-      );
+        button.classList.remove(
+          "nav-active"
+        );
 
-    });
+      }
+    );
+
 
   $(id)?.classList.add(
     "nav-active"
@@ -499,19 +662,20 @@ function showHome() {
 
   hideMainScreens();
 
+
   const home =
     $("home-screen");
 
-  if (home) {
 
+  if (home)
     home.style.display =
       "block";
 
-  }
 
   activateNav(
     "home-nav"
   );
+
 
   renderSavedGroups();
 }
@@ -521,19 +685,20 @@ function showGroups() {
 
   hideMainScreens();
 
+
   const screen =
     $("groups-screen");
 
-  if (screen) {
 
+  if (screen)
     screen.style.display =
       "block";
 
-  }
 
   activateNav(
     "groups-nav"
   );
+
 
   renderSavedGroups();
 
@@ -545,19 +710,20 @@ function showProfile() {
 
   hideMainScreens();
 
+
   const screen =
     $("profile-screen");
 
-  if (screen) {
 
+  if (screen)
     screen.style.display =
       "block";
 
-  }
 
   activateNav(
     "profile-nav"
   );
+
 
   loadProfile();
 }
@@ -575,6 +741,7 @@ function loadProfile() {
   if (!input)
     return;
 
+
   input.value =
     localStorage.getItem(
       "anonybox_username"
@@ -589,6 +756,7 @@ function saveProfile() {
 
   if (!input)
     return;
+
 
   const name =
     input.value.trim();
@@ -626,6 +794,7 @@ function generateCode() {
 
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
 
   let code = "";
 
@@ -736,7 +905,6 @@ async function createGroup() {
 
 
       attempts++;
-
     }
 
 
@@ -757,11 +925,9 @@ async function createGroup() {
 
     const group = {
 
-      code:
-        code,
+      code,
 
-      name:
-        name,
+      name,
 
       creator:
         currentUser.uid,
@@ -779,24 +945,10 @@ async function createGroup() {
     };
 
 
-    /*
-       =====================================================
-       ÉTAPE 1
-       SAUVEGARDE LOCALE IMMÉDIATE
-       =====================================================
-    */
-
     saveLocalGroup(
       group
     );
 
-
-    /*
-       =====================================================
-       ÉTAPE 2
-       SAUVEGARDE FIREBASE
-       =====================================================
-    */
 
     await set(
 
@@ -806,8 +958,7 @@ async function createGroup() {
       ),
 
       {
-        name:
-          name,
+        name,
 
         creator:
           currentUser.uid,
@@ -850,34 +1001,21 @@ async function createGroup() {
     );
 
 
-    /*
-       État courant
-    */
-
     currentGroupCode =
       code;
-
 
     currentGroup =
       group;
 
 
-    /*
-       Affichage immédiat
-    */
-
     renderSavedGroups();
 
 
     toast(
-      "Groupe créé et sauvegardé",
+      "Groupe créé",
       "✓"
     );
 
-
-    /*
-       Ouvrir le groupe
-    */
 
     openGroup(
       code,
@@ -888,15 +1026,10 @@ async function createGroup() {
   } catch (error) {
 
     console.error(
-      "ERREUR CRÉATION GROUPE :",
+      "Création groupe :",
       error
     );
 
-
-    /*
-       Le groupe a peut-être déjà été sauvegardé
-       localement avant l'erreur Firebase.
-    */
 
     renderSavedGroups();
 
@@ -905,25 +1038,12 @@ async function createGroup() {
       "Groupe sauvegardé sur l'appareil",
       "✓"
     );
-
-
-    /*
-       Si Firebase refuse l'écriture,
-       on informe quand même dans la console.
-    */
-
-    console.error(
-      "Firebase n'a pas accepté la création :",
-      error
-    );
-
   }
-
 }
 
 
 /* =========================================================
-   REJOINDRE UN GROUPE
+   REJOINDRE GROUPE
 ========================================================= */
 
 async function joinGroup() {
@@ -983,11 +1103,6 @@ async function joinGroup() {
 
     if (!snapshot.exists()) {
 
-      /*
-         Vérifier quand même
-         dans la sauvegarde locale.
-      */
-
       const localGroups =
         getLocalGroups();
 
@@ -995,7 +1110,8 @@ async function joinGroup() {
       const localGroup =
         localGroups.find(
           group =>
-            group.code === code
+            group.code ===
+            code
         );
 
 
@@ -1014,7 +1130,6 @@ async function joinGroup() {
         );
 
         return;
-
       }
 
 
@@ -1054,27 +1169,25 @@ async function joinGroup() {
 
     const localGroup = {
 
-      code:
-        code,
+      code,
 
       name:
-        group.name || "Groupe",
+        group.name ||
+        "Groupe",
 
       creator:
-        group.creator || "",
+        group.creator ||
+        "",
 
       createdAt:
-        group.createdAt || Date.now(),
+        group.createdAt ||
+        Date.now(),
 
       members:
         group.members
 
     };
 
-
-    /*
-       Sauvegarde locale
-    */
 
     saveLocalGroup(
       localGroup
@@ -1084,9 +1197,15 @@ async function joinGroup() {
     currentGroupCode =
       code;
 
-
     currentGroup =
       localGroup;
+
+
+    unreadMessages[code] =
+      false;
+
+
+    saveUnreadMessages();
 
 
     renderSavedGroups();
@@ -1107,15 +1226,10 @@ async function joinGroup() {
   } catch (error) {
 
     console.error(
-      "ERREUR REJOINDRE :",
+      "Rejoindre groupe :",
       error
     );
 
-
-    /*
-       Si le groupe existe déjà localement,
-       on peut quand même l'ouvrir.
-    */
 
     const localGroups =
       getLocalGroups();
@@ -1124,7 +1238,8 @@ async function joinGroup() {
     const localGroup =
       localGroups.find(
         group =>
-          group.code === code
+          group.code ===
+          code
       );
 
 
@@ -1155,12 +1270,11 @@ async function joinGroup() {
 
     toast(
       "Erreur : " +
-      (error.code || "inconnue"),
+      (error.code ||
+       "inconnue"),
       "!"
     );
-
   }
-
 }
 
 
@@ -1180,7 +1294,6 @@ function loadGroups() {
 
     groupsUnsubscribe =
       null;
-
   }
 
 
@@ -1199,7 +1312,8 @@ function loadGroups() {
       snapshot => {
 
         const data =
-          snapshot.val() || {};
+          snapshot.val() ||
+          {};
 
 
         const firebaseGroups =
@@ -1221,22 +1335,16 @@ function loadGroups() {
 
               firebaseGroups.push({
 
-                code:
-                  code,
+                code,
 
                 ...group
 
               });
 
 
-              /*
-                 Synchroniser avec le téléphone.
-              */
-
               saveLocalGroup({
 
-                code:
-                  code,
+                code,
 
                 ...group
 
@@ -1247,19 +1355,6 @@ function loadGroups() {
           }
         );
 
-
-        /*
-           Nettoyage des groupes locaux
-        */
-
-        cleanLocalGroups(
-          firebaseGroups
-        );
-
-
-        /*
-           Fusionner Firebase + local
-        */
 
         const allGroups =
           mergeGroups(
@@ -1281,26 +1376,19 @@ function loadGroups() {
       error => {
 
         console.error(
-          "ERREUR GROUPES FIREBASE :",
+          "Firebase groupes :",
           error
         );
 
 
-        /*
-           Firebase indisponible :
-           utiliser les groupes locaux.
-        */
-
         renderSavedGroups();
-
       }
-
     );
 }
 
 
 /* =========================================================
-   RENDU DEPUIS LA SAUVEGARDE LOCALE
+   GROUPES LOCAUX
 ========================================================= */
 
 function renderSavedGroups() {
@@ -1321,10 +1409,38 @@ function renderSavedGroups() {
 
 
 /* =========================================================
-   AFFICHER GROUPES
+   BADGE NON LU
 ========================================================= */
 
-function renderGroups(groups) {
+function getGroupUnreadHTML(
+  code
+) {
+
+  if (
+    !isGroupUnread(code)
+  ) {
+
+    return "";
+
+  }
+
+
+  return `
+    <span
+      class="group-unread-dot"
+      aria-label="Nouveaux messages"
+    ></span>
+  `;
+}
+
+
+/* =========================================================
+   RENDU GROUPES
+========================================================= */
+
+function renderGroups(
+  groups
+) {
 
   const list =
     $("groups-list");
@@ -1348,7 +1464,7 @@ function renderGroups(groups) {
       <div class="empty-groups">
 
         <div class="empty-icon">
-          💬
+          👻
         </div>
 
         <h3>
@@ -1376,27 +1492,52 @@ function renderGroups(groups) {
         );
 
 
+      const unread =
+        isGroupUnread(
+          group.code
+        );
+
+
       item.className =
-        "group-card whatsapp-group";
+        "group-card" +
+        (
+          unread
+            ? " has-unread"
+            : ""
+        );
 
 
       item.innerHTML = `
 
         <div class="group-avatar">
+
           👻
+
+          ${getGroupUnreadHTML(
+            group.code
+          )}
+
         </div>
 
         <div class="group-details">
 
           <div class="group-name">
+
             ${escapeHTML(
               group.name ||
               "Groupe"
             )}
+
           </div>
 
           <div class="group-last-message">
-            Groupe privé
+
+            ${
+              unread
+                ? "Nouveau message"
+                : "Groupe privé"
+            }
+
           </div>
 
         </div>
@@ -1434,7 +1575,9 @@ function renderGroups(groups) {
    GROUPES ACCUEIL
 ========================================================= */
 
-function renderHomeGroups(groups) {
+function renderHomeGroups(
+  groups
+) {
 
   const list =
     $("home-groups-list");
@@ -1458,7 +1601,7 @@ function renderHomeGroups(groups) {
       <div class="empty-groups">
 
         <div class="empty-icon">
-          💬
+          👻
         </div>
 
         <h3>
@@ -1488,27 +1631,52 @@ function renderHomeGroups(groups) {
           );
 
 
+        const unread =
+          isGroupUnread(
+            group.code
+          );
+
+
         item.className =
-          "group-card whatsapp-group";
+          "group-card" +
+          (
+            unread
+              ? " has-unread"
+              : ""
+          );
 
 
         item.innerHTML = `
 
           <div class="group-avatar">
+
             👻
+
+            ${getGroupUnreadHTML(
+              group.code
+            )}
+
           </div>
 
           <div class="group-details">
 
             <div class="group-name">
+
               ${escapeHTML(
                 group.name ||
                 "Groupe"
               )}
+
             </div>
 
             <div class="group-last-message">
-              Discussion
+
+              ${
+                unread
+                  ? "Nouveau message"
+                  : "Discussion"
+              }
+
             </div>
 
           </div>
@@ -1543,6 +1711,27 @@ function renderHomeGroups(groups) {
 
 
 /* =========================================================
+   ACTUALISER AFFICHAGE GROUPES
+========================================================= */
+
+function updateGroupDisplays() {
+
+  const groups =
+    getLocalGroups();
+
+
+  renderGroups(
+    groups
+  );
+
+
+  renderHomeGroups(
+    groups
+  );
+}
+
+
+/* =========================================================
    OUVRIR GROUPE
 ========================================================= */
 
@@ -1562,11 +1751,6 @@ function openGroup(
   }
 
 
-  /*
-     Si le groupe vient d'être ouvert,
-     on le sauvegarde encore une fois.
-  */
-
   if (
     group &&
     currentUser
@@ -1574,8 +1758,7 @@ function openGroup(
 
     saveLocalGroup({
 
-      code:
-        code,
+      code,
 
       ...group
 
@@ -1590,6 +1773,19 @@ function openGroup(
 
   currentGroup =
     group || {};
+
+
+  /*
+     IMPORTANT :
+     Le groupe est considéré comme lu
+     uniquement lorsqu'on l'ouvre.
+  */
+
+  unreadMessages[code] =
+    false;
+
+
+  saveUnreadMessages();
 
 
   hideMainScreens();
@@ -1685,10 +1881,6 @@ function openGroup(
   }
 
 
-  /*
-     PAGE PLEIN ÉCRAN
-  */
-
   page.classList.add(
     "active"
   );
@@ -1720,19 +1912,7 @@ function openGroup(
     "fixed";
 
 
-  page.style.left =
-    "0";
-
-
-  page.style.top =
-    "0";
-
-
-  page.style.right =
-    "0";
-
-
-  page.style.bottom =
+  page.style.inset =
     "0";
 
 
@@ -1742,6 +1922,10 @@ function openGroup(
 
   page.style.height =
     "100vh";
+
+
+  page.style.height =
+    "100dvh";
 
 
   page.style.zIndex =
@@ -1758,27 +1942,19 @@ function openGroup(
   );
 
 
-  const input =
-    $("message-input");
+  /*
+     Pas de focus automatique ici.
+     
+     Cela évite que le clavier Android
+     apparaisse immédiatement à l'ouverture
+     du groupe.
+  */
 
-
-  if (input) {
-
-    setTimeout(
-      () => {
-
-        input.focus();
-
-      },
-      100
-    );
-
-  }
 }
 
 
 /* =========================================================
-   RETOUR
+   RETOUR CHAT
 ========================================================= */
 
 function closeChat() {
@@ -1839,7 +2015,7 @@ function closeChat() {
 
 
 /* =========================================================
-   MENU 3 POINTS
+   MENU
 ========================================================= */
 
 function toggleMenu() {
@@ -1852,22 +2028,17 @@ function toggleMenu() {
     return;
 
 
-  if (
+  const visible =
     menu.style.display ===
       "block" ||
     menu.style.display ===
-      "flex"
-  ) {
+      "flex";
 
-    menu.style.display =
-      "none";
 
-  } else {
-
-    menu.style.display =
-      "block";
-
-  }
+  menu.style.display =
+    visible
+      ? "none"
+      : "block";
 }
 
 
@@ -1877,12 +2048,9 @@ function closeMenu() {
     $("chat-menu");
 
 
-  if (menu) {
-
+  if (menu)
     menu.style.display =
       "none";
-
-  }
 }
 
 
@@ -1899,12 +2067,9 @@ function openInfo() {
     $("group-info-panel");
 
 
-  if (panel) {
-
+  if (panel)
     panel.style.display =
       "block";
-
-  }
 }
 
 
@@ -1914,12 +2079,9 @@ function closeInfo() {
     $("group-info-panel");
 
 
-  if (panel) {
-
+  if (panel)
     panel.style.display =
       "none";
-
-  }
 }
 
 
@@ -1928,7 +2090,8 @@ function updateMemberCount(
 ) {
 
   const members =
-    group?.members || {};
+    group?.members ||
+    {};
 
 
   const count =
@@ -1941,12 +2104,9 @@ function updateMemberCount(
     $("info-member-count");
 
 
-  if (element) {
-
+  if (element)
     element.textContent =
       count;
-
-  }
 }
 
 
@@ -2011,12 +2171,9 @@ function closeConfirmation() {
     $("confirm-overlay");
 
 
-  if (overlay) {
-
+  if (overlay)
     overlay.style.display =
       "none";
-
-  }
 
 
   confirmationCallback =
@@ -2065,10 +2222,6 @@ async function leaveGroup() {
 
   try {
 
-    /*
-       Firebase
-    */
-
     await remove(
 
       ref(
@@ -2079,13 +2232,16 @@ async function leaveGroup() {
     );
 
 
-    /*
-       Sauvegarde locale
-    */
-
     removeLocalGroup(
       code
     );
+
+
+    unreadMessages[code] =
+      false;
+
+
+    saveUnreadMessages();
 
 
     toast(
@@ -2105,12 +2261,6 @@ async function leaveGroup() {
     );
 
 
-    /*
-       Même si Firebase est momentanément
-       indisponible, on retire le groupe
-       de l'affichage local.
-    */
-
     removeLocalGroup(
       code
     );
@@ -2123,7 +2273,6 @@ async function leaveGroup() {
 
 
     closeChat();
-
   }
 }
 
@@ -2247,13 +2396,16 @@ async function deleteGroup() {
     );
 
 
-    /*
-       SUPPRESSION LOCALE
-    */
-
     removeLocalGroup(
       code
     );
+
+
+    unreadMessages[code] =
+      false;
+
+
+    saveUnreadMessages();
 
 
     toast(
@@ -2273,16 +2425,10 @@ async function deleteGroup() {
     );
 
 
-    /*
-       Ne pas prétendre que Firebase a supprimé
-       le groupe si l'opération a échoué.
-    */
-
     toast(
       "Erreur de suppression Firebase",
       "!"
     );
-
   }
 }
 
@@ -2312,7 +2458,6 @@ async function copyCode() {
       "✓"
     );
 
-
   } catch {
 
     toast(
@@ -2320,8 +2465,35 @@ async function copyCode() {
       currentGroupCode,
       "🔑"
     );
-
   }
+}
+
+
+/* =========================================================
+   FORMAT HEURE
+========================================================= */
+
+function formatMessageTime(
+  timestamp
+) {
+
+  if (!timestamp)
+    return "";
+
+
+  const date =
+    new Date(
+      timestamp
+    );
+
+
+  return date.toLocaleTimeString(
+    [],
+    {
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
 }
 
 
@@ -2350,8 +2522,19 @@ function listenMessages(
 
       snapshot => {
 
+        const data =
+          snapshot.val() ||
+          {};
+
+
+        processUnreadMessages(
+          code,
+          data
+        );
+
+
         renderMessages(
-          snapshot.val() || {}
+          data
         );
 
       },
@@ -2368,15 +2551,123 @@ function listenMessages(
           "Erreur des messages",
           "!"
         );
-
       }
-
     );
 }
 
 
 /* =========================================================
-   STOP MESSAGES
+   DÉTECTION NOUVEAUX MESSAGES
+========================================================= */
+
+function processUnreadMessages(
+  code,
+  data
+) {
+
+  const entries =
+    Object.entries(
+      data
+    );
+
+
+  if (
+    entries.length === 0
+  )
+    return;
+
+
+  let newestTimestamp =
+    0;
+
+
+  let hasUnread =
+    false;
+
+
+  const lastRead =
+    getLastRead(
+      code
+    );
+
+
+  entries.forEach(
+    ([id, message]) => {
+
+      const timestamp =
+        Number(
+          message.timestamp ||
+          0
+        );
+
+
+      if (
+        timestamp >
+        newestTimestamp
+      ) {
+
+        newestTimestamp =
+          timestamp;
+
+      }
+
+
+      /*
+         Uniquement les messages
+         provenant d'autres utilisateurs.
+      */
+
+      if (
+        message.uid !==
+          currentUser?.uid &&
+        timestamp >
+          lastRead
+      ) {
+
+        hasUnread =
+          true;
+
+      }
+
+    }
+  );
+
+
+  /*
+     Si le groupe est actuellement ouvert,
+     on considère les messages visibles comme lus.
+  */
+
+  if (
+    currentGroupCode ===
+      code
+  ) {
+
+    if (newestTimestamp > 0) {
+
+      setLastRead(
+        code,
+        newestTimestamp
+      );
+
+    }
+
+    return;
+  }
+
+
+  if (hasUnread) {
+
+    markGroupUnread(
+      code
+    );
+
+  }
+}
+
+
+/* =========================================================
+   ARRÊTER MESSAGES
 ========================================================= */
 
 function stopMessages() {
@@ -2389,7 +2680,6 @@ function stopMessages() {
 
     messagesUnsubscribe =
       null;
-
   }
 }
 
@@ -2464,8 +2754,18 @@ function renderMessages(
         );
 
 
+      const isMine =
+        message.uid ===
+        currentUser?.uid;
+
+
       wrapper.className =
-        "message-item";
+        "message-item" +
+        (
+          isMine
+            ? " mine"
+            : ""
+        );
 
 
       const author =
@@ -2475,8 +2775,12 @@ function renderMessages(
 
 
       author.textContent =
-        message.name ||
-        "Anonyme";
+        isMine
+          ? "Vous"
+          : (
+              message.name ||
+              "Anonyme"
+            );
 
 
       const bubble =
@@ -2489,9 +2793,50 @@ function renderMessages(
         "message-bubble";
 
 
-      bubble.textContent =
+      /*
+         Le texte reste dans textContent :
+         aucune injection HTML.
+      */
+
+      const text =
+        document.createElement(
+          "span"
+        );
+
+
+      text.textContent =
         message.text ||
         "";
+
+
+      bubble.appendChild(
+        text
+      );
+
+
+      /*
+         Heure type WhatsApp.
+      */
+
+      const time =
+        document.createElement(
+          "span"
+        );
+
+
+      time.className =
+        "message-time";
+
+
+      time.textContent =
+        formatMessageTime(
+          message.timestamp
+        );
+
+
+      bubble.appendChild(
+        time
+      );
 
 
       wrapper.appendChild(
@@ -2512,8 +2857,19 @@ function renderMessages(
   );
 
 
-  container.scrollTop =
-    container.scrollHeight;
+  /*
+     Défilement seulement après
+     le rendu des messages.
+  */
+
+  requestAnimationFrame(
+    () => {
+
+      container.scrollTop =
+        container.scrollHeight;
+
+    }
+  );
 }
 
 
@@ -2561,6 +2917,14 @@ async function sendMessage() {
     return;
 
 
+  /*
+     On mémorise la valeur avant
+     toute opération réseau.
+  */
+
+  input.value = "";
+
+
   try {
 
     const messageRef =
@@ -2581,34 +2945,68 @@ async function sendMessage() {
       "Anonyme";
 
 
+    const timestamp =
+      Date.now();
+
+
     await set(
 
       messageRef,
 
       {
 
-        text:
-          text,
+        text,
 
-        name:
-          name,
+        name,
 
         uid:
           currentUser.uid,
 
-        timestamp:
-          Date.now()
+        timestamp
 
       }
 
     );
 
 
-    input.value =
-      "";
+    /*
+       Le point de notification
+       ne doit jamais apparaître
+       pour son propre message.
+    */
+
+    setLastRead(
+      currentGroupCode,
+      timestamp
+    );
 
 
-    input.focus();
+    /*
+       IMPORTANT :
+       on ne fait PAS input.focus()
+       ici.
+
+       Android garde ainsi beaucoup
+       mieux le clavier ouvert
+       pendant l'envoi.
+    */
+
+
+    requestAnimationFrame(
+      () => {
+
+        const messages =
+          $("messages");
+
+        if (messages) {
+
+          messages.scrollTop =
+            messages.scrollHeight;
+
+        }
+
+      }
+    );
 
 
   } catch (error) {
@@ -2619,11 +3017,19 @@ async function sendMessage() {
     );
 
 
+    /*
+       Restaurer le texte
+       si l'envoi échoue.
+    */
+
+    input.value =
+      text;
+
+
     toast(
       "Message non envoyé",
       "!"
     );
-
   }
 }
 
@@ -2696,7 +3102,7 @@ $("save-profile")
 
 
 /* =========================================================
-   RETOUR CHAT
+   RETOUR
 ========================================================= */
 
 $("chat-back-button")
@@ -2707,7 +3113,7 @@ $("chat-back-button")
 
 
 /* =========================================================
-   MENU 3 POINTS
+   MENU
 ========================================================= */
 
 $("chat-menu-button")
@@ -2775,7 +3181,7 @@ $("menu-delete-group")
 
 
 /* =========================================================
-   CONFIRMATION ANNULER
+   CONFIRMATION
 ========================================================= */
 
 $("confirm-cancel")
@@ -2784,10 +3190,6 @@ $("confirm-cancel")
     closeConfirmation
   );
 
-
-/* =========================================================
-   CONFIRMATION OK
-========================================================= */
 
 $("confirm-ok")
   ?.addEventListener(
@@ -2815,7 +3217,7 @@ $("confirm-ok")
 
 
 /* =========================================================
-   ENVOYER MESSAGE
+   ENVOYER
 ========================================================= */
 
 $("send-button")
@@ -2849,7 +3251,7 @@ $("message-input")
 
 
 /* =========================================================
-   FERMER MENU EN DEHORS
+   MENU EXTÉRIEUR
 ========================================================= */
 
 document.addEventListener(
@@ -2935,15 +3337,14 @@ onAuthStateChanged(
       );
 
 
-      /*
-         Afficher immédiatement
-         les groupes sauvegardés.
-      */
+      loadUnreadMessages();
+
 
       renderSavedGroups();
 
 
       loadGroups();
+
 
       loadProfile();
 
@@ -2991,12 +3392,6 @@ signInAnonymously(
     );
 
 
-    /*
-       Les groupes locaux restent
-       disponibles même si Firebase
-       rencontre momentanément un problème.
-    */
-
     toast(
       "Mode local activé",
       "📱"
@@ -3017,5 +3412,5 @@ showHome();
 
 
 console.log(
-  "AnonyBoX démarré — sauvegarde locale activée"
+  "AnonyBoX démarré — version moderne"
 );
