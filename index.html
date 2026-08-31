@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -22,34 +20,26 @@
 
   <title>AnonyBoX</title>
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="style.css">
 
-  <!-- PWA -->
   <link
     rel="manifest"
-    href="./manifest.json"
+    href="manifest.json"
   >
-
 </head>
 
 <body>
 
-<main
-  id="app"
-  class="app"
->
+<main id="app" class="app">
 
-  <!-- ===================================================
-       ÉCRAN ACCUEIL
-  ==================================================== -->
+  <!-- =====================================================
+       ACCUEIL
+  ====================================================== -->
 
   <section
     id="home-screen"
     class="screen home-screen"
   >
-
-    <!-- HEADER -->
 
     <header class="app-header">
 
@@ -85,9 +75,7 @@
     </header>
 
 
-    <!-- =================================================
-         HERO
-    ================================================== -->
+    <!-- HERO -->
 
     <section
       class="hero"
@@ -117,16 +105,12 @@
     </section>
 
 
-    <!-- =================================================
-         ACTIONS PRINCIPALES
-    ================================================== -->
+    <!-- ACTIONS -->
 
     <section
       class="actions"
       aria-label="Actions principales"
     >
-
-      <!-- CRÉER -->
 
       <button
         id="create-group-button"
@@ -156,8 +140,6 @@
 
       </button>
 
-
-      <!-- REJOINDRE -->
 
       <button
         id="join-button"
@@ -190,13 +172,9 @@
     </section>
 
 
-    <!-- =================================================
-         APERÇU DES GROUPES
-    ================================================== -->
+    <!-- GROUPES RÉCENTS -->
 
-    <section
-      class="home-groups-preview"
-    >
+    <section class="home-groups-preview">
 
       <div class="section-title">
 
@@ -234,7 +212,7 @@
         >
 
           <div class="empty-icon">
-            💬
+            👻
           </div>
 
           <h3>
@@ -254,9 +232,9 @@
   </section>
 
 
-  <!-- ===================================================
-       ÉCRAN GROUPES
-  ==================================================== -->
+  <!-- =====================================================
+       GROUPES
+  ====================================================== -->
 
   <section
     id="groups-screen"
@@ -316,7 +294,7 @@
       >
 
         <div class="empty-icon">
-          💬
+          👻
         </div>
 
         <h3>
@@ -338,9 +316,9 @@
   </section>
 
 
-  <!-- ===================================================
-       PAGE DE DISCUSSION
-  ==================================================== -->
+  <!-- =====================================================
+       DISCUSSION
+  ====================================================== -->
 
   <section
     id="chat-page"
@@ -425,7 +403,7 @@
         type="button"
         role="menuitem"
       >
-        <span>📋</span>
+        <span>🔑</span>
         <span>Copier le code</span>
       </button>
 
@@ -453,7 +431,7 @@
     </div>
 
 
-    <!-- INFORMATIONS -->
+    <!-- INFORMATIONS DU GROUPE -->
 
     <div
       id="group-info-panel"
@@ -557,9 +535,7 @@
 
     <!-- ÉCRITURE -->
 
-    <footer
-      class="message-area"
-    >
+    <footer class="message-area">
 
       <div class="message-box">
 
@@ -586,9 +562,9 @@
   </section>
 
 
-  <!-- ===================================================
+  <!-- =====================================================
        PROFIL
-  ==================================================== -->
+  ====================================================== -->
 
   <section
     id="profile-screen"
@@ -768,7 +744,7 @@
   >
 
     <span>
-      💬
+      👥
     </span>
 
     <small>
@@ -797,49 +773,13 @@
 
 
 <!-- =====================================================
-     JAVASCRIPT PRINCIPAL
+     JAVASCRIPT
 ====================================================== -->
 
 <script
   type="module"
-  src="./script.js"
+  src="script.js"
 ></script>
-
-
-<!-- =====================================================
-     SERVICE WORKER / PWA
-====================================================== -->
-
-<script>
-
-  if ("serviceWorker" in navigator) {
-
-    window.addEventListener("load", () => {
-
-      navigator.serviceWorker
-        .register("./service-worker.js")
-        .then(() => {
-
-          console.log(
-            "AnonyBoX : Service Worker enregistré."
-          );
-
-        })
-        .catch((error) => {
-
-          console.error(
-            "AnonyBoX : erreur Service Worker :",
-            error
-          );
-
-        });
-
-    });
-
-  }
-
-</script>
-
 
 </body>
 </html>
