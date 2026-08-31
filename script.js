@@ -1,8 +1,8 @@
 /* =========================================================
    ANONYBOX — SCRIPT.JS
-   VERSION COMPLÈTE
-   Firebase + groupes locaux + messages non lus
-   + heures + interface moderne
+   VERSION STABLE
+   Firebase + mode local de secours
+   Groupes + messages + notifications + heures
 ========================================================= */
 
 import { initializeApp } from
@@ -32,7 +32,7 @@ import {
 ========================================================= */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAGrCghSoJf7ULhi1Zi1RqeYmt4bE63a3M",
+  apiKey: "AIzaSyAGrCghSoJf7ULhi1ZiR1qeYmt4bE63a3M",
   authDomain: "prjt-78fef.firebaseapp.com",
   databaseURL:
     "https://prjt-78fef-default-rtdb.firebaseio.com",
@@ -45,14 +45,43 @@ const firebaseConfig = {
 };
 
 
-const app =
-  initializeApp(firebaseConfig);
+/* =========================================================
+   INITIALISATION FIREBASE
+========================================================= */
 
-const auth =
-  getAuth(app);
+let app = null;
+let auth = null;
+let db = null;
 
-const db =
-  getDatabase(app);
+let firebaseAvailable = false;
+let firebaseAuthReady = false;
+
+
+/*
+   Initialisation protégée.
+*/
+
+try {
+
+  app = initializeApp(firebaseConfig);
+
+  auth = getAuth(app);
+
+  db = getDatabase(app);
+
+  firebaseAvailable = true;
+
+  console.log("Firebase initialisé.");
+
+} catch (error) {
+
+  console.error(
+    "Firebase indisponible :",
+    error
+  );
+
+  firebaseAvailable = false;
+}
 
 
 /* =========================================================
@@ -71,12 +100,45 @@ let groupsUnsubscribe = null;
 
 let confirmationCallback = null;
 
+let unreadMessages = {};
+
 
 /*
-   Permet de savoir quels groupes ont été ouverts.
+   Utilisateur local de secours.
+
+   Il permet à l'application de fonctionner
+   même si Firebase Auth est indisponible.
 */
 
-let unreadMessages = {};
+function createLocalUser() {
+
+  let localUid =
+    localStorage.getItem(
+      "anonybox_local_uid"
+    );
+
+  if (!localUid) {
+
+    localUid =
+      "local_" +
+      Date.now() +
+      "_" +
+      Math.random()
+        .toString(36)
+        .substring(2, 10);
+
+    localStorage.setItem(
+      "anonybox_local_uid",
+      localUid
+    );
+  }
+
+
+  return {
+    uid: localUid,
+    isLocal: true
+  };
+}
 
 
 /* =========================================================
@@ -154,9 +216,7 @@ function toast(
 function escapeHTML(value) {
 
   const div =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   div.textContent =
     String(value ?? "");
@@ -203,16 +263,14 @@ function getLocalGroups() {
       JSON.parse(saved);
 
 
-    if (!Array.isArray(groups))
-      return [];
-
-
-    return groups;
+    return Array.isArray(groups)
+      ? groups
+      : [];
 
   } catch (error) {
 
     console.error(
-      "Erreur lecture groupes :",
+      "Lecture groupes :",
       error
     );
 
@@ -240,7 +298,7 @@ function saveLocalGroups(groups) {
   } catch (error) {
 
     console.error(
-      "Erreur sauvegarde groupes :",
+      "Sauvegarde groupes :",
       error
     );
   }
@@ -280,7 +338,7 @@ function saveLocalGroup(group) {
 
     creator:
       group.creator ||
-      "",
+      currentUser.uid,
 
     createdAt:
       group.createdAt ||
@@ -289,8 +347,7 @@ function saveLocalGroup(group) {
     members:
       group.members ||
       {
-        [currentUser.uid]:
-          true
+        [currentUser.uid]: true
       }
 
   };
@@ -328,23 +385,18 @@ function removeLocalGroup(code) {
     getLocalGroups();
 
 
-  const filtered =
+  saveLocalGroups(
     groups.filter(
       group =>
         group &&
-        group.code !==
-          code
-    );
-
-
-  saveLocalGroups(
-    filtered
+        group.code !== code
+    )
   );
 }
 
 
 /* =========================================================
-   STOCKAGE DES MESSAGES LUS
+   MESSAGES NON LUS
 ========================================================= */
 
 function getUnreadStorageKey() {
@@ -375,10 +427,7 @@ function loadUnreadMessages() {
   try {
 
     const data =
-      localStorage.getItem(
-        key
-      );
-
+      localStorage.getItem(key);
 
     unreadMessages =
       data
@@ -412,28 +461,16 @@ function saveUnreadMessages() {
     return;
 
 
-  try {
-
-    localStorage.setItem(
-      key,
-      JSON.stringify(
-        unreadMessages
-      )
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Erreur sauvegarde notifications :",
-      error
-    );
-  }
+  localStorage.setItem(
+    key,
+    JSON.stringify(
+      unreadMessages
+    )
+  );
 }
 
 
-function getLastReadKey(
-  code
-) {
+function getLastReadKey(code) {
 
   if (
     !currentUser ||
@@ -451,23 +488,17 @@ function getLastReadKey(
 }
 
 
-function getLastRead(
-  code
-) {
+function getLastRead(code) {
 
   const key =
-    getLastReadKey(
-      code
-    );
+    getLastReadKey(code);
 
   if (!key)
     return 0;
 
 
   return Number(
-    localStorage.getItem(
-      key
-    ) || 0
+    localStorage.getItem(key) || 0
   );
 }
 
@@ -478,9 +509,7 @@ function setLastRead(
 ) {
 
   const key =
-    getLastReadKey(
-      code
-    );
+    getLastReadKey(code);
 
   if (!key)
     return;
@@ -488,7 +517,10 @@ function setLastRead(
 
   localStorage.setItem(
     key,
-    String(timestamp || Date.now())
+    String(
+      timestamp ||
+      Date.now()
+    )
   );
 
 
@@ -498,14 +530,11 @@ function setLastRead(
 
   saveUnreadMessages();
 
-
-  renderSavedGroups();
+  updateGroupDisplays();
 }
 
 
-function markGroupUnread(
-  code
-) {
+function markGroupUnread(code) {
 
   if (!code)
     return;
@@ -517,18 +546,14 @@ function markGroupUnread(
 
   saveUnreadMessages();
 
-
   updateGroupDisplays();
 }
 
 
-function isGroupUnread(
-  code
-) {
+function isGroupUnread(code) {
 
   return (
-    unreadMessages[code] ===
-    true
+    unreadMessages[code] === true
   );
 }
 
@@ -574,9 +599,7 @@ function mergeGroups(
       if (
         group &&
         group.code &&
-        !map.has(
-          group.code
-        )
+        !map.has(group.code)
       ) {
 
         map.set(
@@ -623,12 +646,9 @@ function hideMainScreens() {
       const element =
         $(id);
 
-      if (element) {
-
+      if (element)
         element.style.display =
           "none";
-
-      }
 
     }
   );
@@ -642,13 +662,10 @@ function activateNav(id) {
       ".bottom-nav button"
     )
     .forEach(
-      button => {
-
+      button =>
         button.classList.remove(
           "nav-active"
-        );
-
-      }
+        )
     );
 
 
@@ -826,14 +843,18 @@ function generateCode() {
 
 async function createGroup() {
 
+  /*
+     Cette fois, on ne bloque plus
+     l'utilisateur si Firebase n'est
+     pas connecté.
+  */
+
   if (!currentUser) {
 
-    toast(
-      "Connexion en cours...",
-      "⏳"
-    );
+    currentUser =
+      createLocalUser();
 
-    return;
+    loadUnreadMessages();
   }
 
 
@@ -874,28 +895,19 @@ async function createGroup() {
       generateCode();
 
 
-    let snapshot =
-      await get(
-        ref(
-          db,
-          `groups/${code}`
-        )
-      );
+    /*
+       Vérification Firebase seulement
+       si Firebase est réellement disponible.
+    */
 
-
-    let attempts = 0;
-
-
-    while (
-      snapshot.exists() &&
-      attempts < 20
+    if (
+      firebaseAvailable &&
+      firebaseAuthReady &&
+      db &&
+      !currentUser.isLocal
     ) {
 
-      code =
-        generateCode();
-
-
-      snapshot =
+      let snapshot =
         await get(
           ref(
             db,
@@ -904,18 +916,30 @@ async function createGroup() {
         );
 
 
-      attempts++;
-    }
+      let attempts = 0;
 
 
-    if (snapshot.exists()) {
+      while (
+        snapshot.exists() &&
+        attempts < 20
+      ) {
 
-      toast(
-        "Impossible de générer un code",
-        "!"
-      );
+        code =
+          generateCode();
 
-      return;
+
+        snapshot =
+          await get(
+            ref(
+              db,
+              `groups/${code}`
+            )
+          );
+
+
+        attempts++;
+      }
+
     }
 
 
@@ -945,60 +969,76 @@ async function createGroup() {
     };
 
 
+    /*
+       Toujours sauvegarder localement.
+    */
+
     saveLocalGroup(
       group
     );
 
 
-    await set(
+    /*
+       Synchronisation Firebase
+       si disponible.
+    */
 
-      ref(
-        db,
-        `groups/${code}`
-      ),
+    if (
+      firebaseAvailable &&
+      firebaseAuthReady &&
+      db &&
+      !currentUser.isLocal
+    ) {
 
-      {
-        name,
+      await set(
 
-        creator:
-          currentUser.uid,
+        ref(
+          db,
+          `groups/${code}`
+        ),
 
-        createdAt:
-          now,
+        {
+          name,
 
-        members: {
+          creator:
+            currentUser.uid,
 
-          [currentUser.uid]:
-            true
+          createdAt:
+            now,
+
+          members: {
+
+            [currentUser.uid]:
+              true
+
+          }
 
         }
 
-      }
-
-    );
+      );
 
 
-    await set(
+      await set(
 
-      ref(
-        db,
-        `groupCodes/${code}`
-      ),
+        ref(
+          db,
+          `groupCodes/${code}`
+        ),
 
-      {
+        {
+          groupCode:
+            code,
 
-        groupCode:
-          code,
+          createdBy:
+            currentUser.uid,
 
-        createdBy:
-          currentUser.uid,
+          createdAt:
+            now
+        }
 
-        createdAt:
-          now
+      );
 
-      }
-
-    );
+    }
 
 
     currentGroupCode =
@@ -1012,7 +1052,11 @@ async function createGroup() {
 
 
     toast(
-      "Groupe créé",
+      firebaseAvailable &&
+      firebaseAuthReady &&
+      !currentUser.isLocal
+        ? "Groupe créé"
+        : "Groupe créé sur cet appareil",
       "✓"
     );
 
@@ -1031,13 +1075,11 @@ async function createGroup() {
     );
 
 
-    renderSavedGroups();
-
-
     toast(
-      "Groupe sauvegardé sur l'appareil",
-      "✓"
+      "Groupe créé localement",
+      "📱"
     );
+
   }
 }
 
@@ -1050,12 +1092,10 @@ async function joinGroup() {
 
   if (!currentUser) {
 
-    toast(
-      "Connexion en cours...",
-      "⏳"
-    );
+    currentUser =
+      createLocalUser();
 
-    return;
+    loadUnreadMessages();
   }
 
 
@@ -1086,36 +1126,88 @@ async function joinGroup() {
   }
 
 
-  try {
+  /*
+     Mode Firebase.
+  */
 
-    const groupRef =
-      ref(
-        db,
-        `groups/${code}`
-      );
+  if (
+    firebaseAvailable &&
+    firebaseAuthReady &&
+    db &&
+    !currentUser.isLocal
+  ) {
 
+    try {
 
-    const snapshot =
-      await get(
-        groupRef
-      );
-
-
-    if (!snapshot.exists()) {
-
-      const localGroups =
-        getLocalGroups();
-
-
-      const localGroup =
-        localGroups.find(
-          group =>
-            group.code ===
-            code
+      const snapshot =
+        await get(
+          ref(
+            db,
+            `groups/${code}`
+          )
         );
 
 
-      if (localGroup) {
+      if (snapshot.exists()) {
+
+        const group =
+          snapshot.val();
+
+
+        await set(
+
+          ref(
+            db,
+            `groups/${code}/members/${currentUser.uid}`
+          ),
+
+          true
+
+        );
+
+
+        group.members =
+          group.members || {};
+
+
+        group.members[
+          currentUser.uid
+        ] = true;
+
+
+        const localGroup = {
+
+          code,
+
+          name:
+            group.name ||
+            "Groupe",
+
+          creator:
+            group.creator ||
+            "",
+
+          createdAt:
+            group.createdAt ||
+            Date.now(),
+
+          members:
+            group.members
+
+        };
+
+
+        saveLocalGroup(
+          localGroup
+        );
+
+
+        unreadMessages[code] =
+          false;
+
+
+        saveUnreadMessages();
+
 
         currentGroupCode =
           code;
@@ -1124,75 +1216,53 @@ async function joinGroup() {
           localGroup;
 
 
+        renderSavedGroups();
+
+
+        toast(
+          "Groupe rejoint",
+          "✓"
+        );
+
+
         openGroup(
           code,
           localGroup
         );
 
+
         return;
       }
 
+    } catch (error) {
 
-      toast(
-        "Groupe introuvable",
-        "!"
+      console.error(
+        "Erreur Firebase join :",
+        error
       );
 
-      return;
     }
 
-
-    const group =
-      snapshot.val();
+  }
 
 
-    await set(
+  /*
+     Recherche locale.
+  */
 
-      ref(
-        db,
-        `groups/${code}/members/${currentUser.uid}`
-      ),
+  const localGroups =
+    getLocalGroups();
 
-      true
 
+  const localGroup =
+    localGroups.find(
+      group =>
+        group &&
+        group.code === code
     );
 
 
-    group.members =
-      group.members || {};
-
-
-    group.members[
-      currentUser.uid
-    ] = true;
-
-
-    const localGroup = {
-
-      code,
-
-      name:
-        group.name ||
-        "Groupe",
-
-      creator:
-        group.creator ||
-        "",
-
-      createdAt:
-        group.createdAt ||
-        Date.now(),
-
-      members:
-        group.members
-
-    };
-
-
-    saveLocalGroup(
-      localGroup
-    );
-
+  if (localGroup) {
 
     currentGroupCode =
       code;
@@ -1201,80 +1271,26 @@ async function joinGroup() {
       localGroup;
 
 
-    unreadMessages[code] =
-      false;
-
-
-    saveUnreadMessages();
-
-
-    renderSavedGroups();
-
-
-    toast(
-      "Groupe rejoint",
-      "✓"
-    );
-
-
     openGroup(
       code,
       localGroup
     );
 
 
-  } catch (error) {
-
-    console.error(
-      "Rejoindre groupe :",
-      error
-    );
-
-
-    const localGroups =
-      getLocalGroups();
-
-
-    const localGroup =
-      localGroups.find(
-        group =>
-          group.code ===
-          code
-      );
-
-
-    if (localGroup) {
-
-      currentGroupCode =
-        code;
-
-      currentGroup =
-        localGroup;
-
-
-      openGroup(
-        code,
-        localGroup
-      );
-
-
-      toast(
-        "Groupe ouvert hors connexion",
-        "📱"
-      );
-
-
-      return;
-    }
-
-
     toast(
-      "Erreur : " +
-      (error.code ||
-       "inconnue"),
-      "!"
+      "Groupe ouvert",
+      "✓"
     );
+
+
+    return;
   }
+
+
+  toast(
+    "Groupe introuvable",
+    "!"
+  );
 }
 
 
@@ -1284,8 +1300,23 @@ async function joinGroup() {
 
 function loadGroups() {
 
-  if (!currentUser)
+  /*
+     Si Firebase n'est pas prêt,
+     on utilise directement le stockage local.
+  */
+
+  if (
+    !currentUser ||
+    !firebaseAvailable ||
+    !firebaseAuthReady ||
+    !db ||
+    currentUser.isLocal
+  ) {
+
+    renderSavedGroups();
+
     return;
+  }
 
 
   if (groupsUnsubscribe) {
@@ -1312,8 +1343,7 @@ function loadGroups() {
       snapshot => {
 
         const data =
-          snapshot.val() ||
-          {};
+          snapshot.val() || {};
 
 
         const firebaseGroups =
@@ -1333,22 +1363,23 @@ function loadGroups() {
               ] === true
             ) {
 
-              firebaseGroups.push({
+              const completeGroup = {
 
                 code,
 
                 ...group
 
-              });
+              };
 
 
-              saveLocalGroup({
+              firebaseGroups.push(
+                completeGroup
+              );
 
-                code,
 
-                ...group
-
-              });
+              saveLocalGroup(
+                completeGroup
+              );
 
             }
 
@@ -1382,7 +1413,9 @@ function loadGroups() {
 
 
         renderSavedGroups();
+
       }
+
     );
 }
 
@@ -1409,20 +1442,15 @@ function renderSavedGroups() {
 
 
 /* =========================================================
-   BADGE NON LU
+   BADGE
 ========================================================= */
 
-function getGroupUnreadHTML(
-  code
-) {
+function getGroupUnreadHTML(code) {
 
   if (
     !isGroupUnread(code)
-  ) {
-
+  )
     return "";
-
-  }
 
 
   return `
@@ -1438,9 +1466,7 @@ function getGroupUnreadHTML(
    RENDU GROUPES
 ========================================================= */
 
-function renderGroups(
-  groups
-) {
+function renderGroups(groups) {
 
   const list =
     $("groups-list");
@@ -1575,9 +1601,7 @@ function renderGroups(
    GROUPES ACCUEIL
 ========================================================= */
 
-function renderHomeGroups(
-  groups
-) {
+function renderHomeGroups(groups) {
 
   const list =
     $("home-groups-list");
@@ -1711,7 +1735,7 @@ function renderHomeGroups(
 
 
 /* =========================================================
-   ACTUALISER AFFICHAGE GROUPES
+   ACTUALISER
 ========================================================= */
 
 function updateGroupDisplays() {
@@ -1751,20 +1775,11 @@ function openGroup(
   }
 
 
-  if (
-    group &&
-    currentUser
-  ) {
-
+  if (group)
     saveLocalGroup({
-
       code,
-
       ...group
-
     });
-
-  }
 
 
   currentGroupCode =
@@ -1775,12 +1790,6 @@ function openGroup(
     group || {};
 
 
-  /*
-     IMPORTANT :
-     Le groupe est considéré comme lu
-     uniquement lorsqu'on l'ouvre.
-  */
-
   unreadMessages[code] =
     false;
 
@@ -1790,60 +1799,27 @@ function openGroup(
 
   hideMainScreens();
 
-
   closeMenu();
 
   closeInfo();
 
 
-  const title =
-    $("chat-title");
+  $("chat-title").textContent =
+    group?.name ||
+    "Groupe";
 
 
-  if (title) {
-
-    title.textContent =
-      group?.name ||
-      "Groupe";
-
-  }
+  $("chat-status").textContent =
+    "Groupe privé";
 
 
-  const status =
-    $("chat-status");
+  $("info-group-name").textContent =
+    group?.name ||
+    "Groupe";
 
 
-  if (status) {
-
-    status.textContent =
-      "Groupe privé";
-
-  }
-
-
-  const infoName =
-    $("info-group-name");
-
-
-  if (infoName) {
-
-    infoName.textContent =
-      group?.name ||
-      "Groupe";
-
-  }
-
-
-  const infoCode =
-    $("info-group-code");
-
-
-  if (infoCode) {
-
-    infoCode.textContent =
-      code;
-
-  }
+  $("info-group-code").textContent =
+    code;
 
 
   updateMemberCount(
@@ -1870,15 +1846,8 @@ function openGroup(
     $("chat-page");
 
 
-  if (!page) {
-
-    toast(
-      "chat-page introuvable",
-      "!"
-    );
-
+  if (!page)
     return;
-  }
 
 
   page.classList.add(
@@ -1895,38 +1864,26 @@ function openGroup(
   page.style.display =
     "flex";
 
-
   page.style.visibility =
     "visible";
-
 
   page.style.opacity =
     "1";
 
-
   page.style.transform =
     "translateX(0)";
-
 
   page.style.position =
     "fixed";
 
-
   page.style.inset =
     "0";
-
 
   page.style.width =
     "100vw";
 
-
-  page.style.height =
-    "100vh";
-
-
   page.style.height =
     "100dvh";
-
 
   page.style.zIndex =
     "99999";
@@ -1940,16 +1897,6 @@ function openGroup(
   listenMessages(
     code
   );
-
-
-  /*
-     Pas de focus automatique ici.
-     
-     Cela évite que le clavier Android
-     apparaisse immédiatement à l'ouverture
-     du groupe.
-  */
-
 }
 
 
@@ -2023,16 +1970,13 @@ function toggleMenu() {
   const menu =
     $("chat-menu");
 
-
   if (!menu)
     return;
 
 
   const visible =
-    menu.style.display ===
-      "block" ||
-    menu.style.display ===
-      "flex";
+    menu.style.display === "block" ||
+    menu.style.display === "flex";
 
 
   menu.style.display =
@@ -2046,7 +1990,6 @@ function closeMenu() {
 
   const menu =
     $("chat-menu");
-
 
   if (menu)
     menu.style.display =
@@ -2085,9 +2028,7 @@ function closeInfo() {
 }
 
 
-function updateMemberCount(
-  group
-) {
+function updateMemberCount(group) {
 
   const members =
     group?.members ||
@@ -2126,34 +2067,19 @@ function askConfirmation(
 
   if (!overlay) {
 
-    if (
-      confirm(message)
-    ) {
-
+    if (confirm(message))
       callback();
-
-    }
 
     return;
   }
 
 
-  const titleBox =
-    $("confirm-title");
+  $("confirm-title").textContent =
+    title;
 
 
-  const messageBox =
-    $("confirm-message");
-
-
-  if (titleBox)
-    titleBox.textContent =
-      title;
-
-
-  if (messageBox)
-    messageBox.textContent =
-      message;
+  $("confirm-message").textContent =
+    message;
 
 
   confirmationCallback =
@@ -2182,7 +2108,7 @@ function closeConfirmation() {
 
 
 /* =========================================================
-   QUITTER GROUPE
+   QUITTER
 ========================================================= */
 
 function askLeave() {
@@ -2213,23 +2139,30 @@ async function leaveGroup() {
     currentGroupCode;
 
 
-  if (
-    !code ||
-    !currentUser
-  )
+  if (!code)
     return;
 
 
   try {
 
-    await remove(
+    if (
+      firebaseAvailable &&
+      firebaseAuthReady &&
+      db &&
+      currentUser &&
+      !currentUser.isLocal
+    ) {
 
-      ref(
-        db,
-        `groups/${code}/members/${currentUser.uid}`
-      )
+      await remove(
 
-    );
+        ref(
+          db,
+          `groups/${code}/members/${currentUser.uid}`
+        )
+
+      );
+
+    }
 
 
     removeLocalGroup(
@@ -2256,7 +2189,7 @@ async function leaveGroup() {
   } catch (error) {
 
     console.error(
-      "Erreur quitter groupe :",
+      "Quitter groupe :",
       error
     );
 
@@ -2267,7 +2200,7 @@ async function leaveGroup() {
 
 
     toast(
-      "Groupe retiré de l'appareil",
+      "Groupe retiré",
       "✓"
     );
 
@@ -2309,91 +2242,77 @@ async function deleteGroup() {
     currentGroupCode;
 
 
-  if (
-    !code ||
-    !currentUser
-  )
+  if (!code)
     return;
 
 
   try {
 
-    const snapshot =
-      await get(
+    if (
+      firebaseAvailable &&
+      firebaseAuthReady &&
+      db &&
+      currentUser &&
+      !currentUser.isLocal
+    ) {
 
+      const snapshot =
+        await get(
+          ref(
+            db,
+            `groups/${code}`
+          )
+        );
+
+
+      if (
+        snapshot.exists()
+      ) {
+
+        const group =
+          snapshot.val();
+
+
+        if (
+          group.creator !==
+          currentUser.uid
+        ) {
+
+          toast(
+            "Seul le créateur peut supprimer",
+            "!"
+          );
+
+          return;
+        }
+
+      }
+
+
+      await remove(
         ref(
           db,
           `groups/${code}`
         )
-
       );
 
 
-    if (!snapshot.exists()) {
-
-      removeLocalGroup(
-        code
+      await remove(
+        ref(
+          db,
+          `groupCodes/${code}`
+        )
       );
 
 
-      toast(
-        "Groupe supprimé",
-        "✓"
+      await remove(
+        ref(
+          db,
+          `messages/${code}`
+        )
       );
 
-
-      closeChat();
-
-      return;
     }
-
-
-    const group =
-      snapshot.val();
-
-
-    if (
-      group.creator !==
-      currentUser.uid
-    ) {
-
-      toast(
-        "Seul le créateur peut supprimer",
-        "!"
-      );
-
-      return;
-    }
-
-
-    await remove(
-
-      ref(
-        db,
-        `groups/${code}`
-      )
-
-    );
-
-
-    await remove(
-
-      ref(
-        db,
-        `groupCodes/${code}`
-      )
-
-    );
-
-
-    await remove(
-
-      ref(
-        db,
-        `messages/${code}`
-      )
-
-    );
 
 
     removeLocalGroup(
@@ -2420,13 +2339,13 @@ async function deleteGroup() {
   } catch (error) {
 
     console.error(
-      "Erreur suppression :",
+      "Suppression :",
       error
     );
 
 
     toast(
-      "Erreur de suppression Firebase",
+      "Erreur de suppression",
       "!"
     );
   }
@@ -2470,24 +2389,18 @@ async function copyCode() {
 
 
 /* =========================================================
-   FORMAT HEURE
+   HEURE
 ========================================================= */
 
-function formatMessageTime(
-  timestamp
-) {
+function formatMessageTime(timestamp) {
 
   if (!timestamp)
     return "";
 
 
-  const date =
-    new Date(
-      timestamp
-    );
-
-
-  return date.toLocaleTimeString(
+  return new Date(
+    timestamp
+  ).toLocaleTimeString(
     [],
     {
       hour: "2-digit",
@@ -2501,11 +2414,28 @@ function formatMessageTime(
    MESSAGES
 ========================================================= */
 
-function listenMessages(
-  code
-) {
+function listenMessages(code) {
 
   stopMessages();
+
+
+  /*
+     Firebase uniquement si connecté.
+  */
+
+  if (
+    !firebaseAvailable ||
+    !firebaseAuthReady ||
+    !db ||
+    currentUser?.isLocal
+  ) {
+
+    renderLocalMessages(
+      code
+    );
+
+    return;
+  }
 
 
   const messagesRef =
@@ -2523,8 +2453,7 @@ function listenMessages(
       snapshot => {
 
         const data =
-          snapshot.val() ||
-          {};
+          snapshot.val() || {};
 
 
         processUnreadMessages(
@@ -2542,22 +2471,92 @@ function listenMessages(
       error => {
 
         console.error(
-          "Messages :",
+          "Messages Firebase :",
           error
         );
 
 
-        toast(
-          "Erreur des messages",
-          "!"
+        renderLocalMessages(
+          code
         );
+
       }
+
     );
 }
 
 
 /* =========================================================
-   DÉTECTION NOUVEAUX MESSAGES
+   MESSAGES LOCAUX
+========================================================= */
+
+function getLocalMessagesKey(code) {
+
+  if (!currentUser)
+    return null;
+
+
+  return (
+    "anonybox_messages_" +
+    currentUser.uid +
+    "_" +
+    code
+  );
+}
+
+
+function getLocalMessages(code) {
+
+  const key =
+    getLocalMessagesKey(code);
+
+  if (!key)
+    return {};
+
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(key) ||
+      "{}"
+    );
+
+  } catch {
+
+    return {};
+  }
+}
+
+
+function saveLocalMessages(
+  code,
+  messages
+) {
+
+  const key =
+    getLocalMessagesKey(code);
+
+  if (!key)
+    return;
+
+
+  localStorage.setItem(
+    key,
+    JSON.stringify(messages)
+  );
+}
+
+
+function renderLocalMessages(code) {
+
+  renderMessages(
+    getLocalMessages(code)
+  );
+}
+
+
+/* =========================================================
+   NON LUS
 ========================================================= */
 
 function processUnreadMessages(
@@ -2567,7 +2566,7 @@ function processUnreadMessages(
 
   const entries =
     Object.entries(
-      data
+      data || {}
     );
 
 
@@ -2586,9 +2585,7 @@ function processUnreadMessages(
 
 
   const lastRead =
-    getLastRead(
-      code
-    );
+    getLastRead(code);
 
 
   entries.forEach(
@@ -2596,8 +2593,7 @@ function processUnreadMessages(
 
       const timestamp =
         Number(
-          message.timestamp ||
-          0
+          message?.timestamp || 0
         );
 
 
@@ -2612,13 +2608,8 @@ function processUnreadMessages(
       }
 
 
-      /*
-         Uniquement les messages
-         provenant d'autres utilisateurs.
-      */
-
       if (
-        message.uid !==
+        message?.uid !==
           currentUser?.uid &&
         timestamp >
           lastRead
@@ -2633,17 +2624,15 @@ function processUnreadMessages(
   );
 
 
-  /*
-     Si le groupe est actuellement ouvert,
-     on considère les messages visibles comme lus.
-  */
-
   if (
     currentGroupCode ===
-      code
+    code
   ) {
 
-    if (newestTimestamp > 0) {
+    if (
+      newestTimestamp >
+      0
+    ) {
 
       setLastRead(
         code,
@@ -2656,13 +2645,10 @@ function processUnreadMessages(
   }
 
 
-  if (hasUnread) {
-
+  if (hasUnread)
     markGroupUnread(
       code
     );
-
-  }
 }
 
 
@@ -2672,9 +2658,7 @@ function processUnreadMessages(
 
 function stopMessages() {
 
-  if (
-    messagesUnsubscribe
-  ) {
+  if (messagesUnsubscribe) {
 
     messagesUnsubscribe();
 
@@ -2688,9 +2672,7 @@ function stopMessages() {
    AFFICHER MESSAGES
 ========================================================= */
 
-function renderMessages(
-  data
-) {
+function renderMessages(data) {
 
   const container =
     $("messages");
@@ -2706,14 +2688,34 @@ function renderMessages(
 
   const entries =
     Object.entries(
-      data
+      data || {}
     );
 
 
   entries.sort(
-    ([, a], [, b]) =>
-      (a.timestamp || 0) -
-      (b.timestamp || 0)
+    ([idA, messageA], [idB, messageB]) => {
+
+      const a =
+        Number(
+          messageA?.timestamp || 0
+        );
+
+
+      const b =
+        Number(
+          messageB?.timestamp || 0
+        );
+
+
+      if (a !== b)
+        return a - b;
+
+
+      return idA.localeCompare(
+        idB
+      );
+
+    }
   );
 
 
@@ -2755,7 +2757,7 @@ function renderMessages(
 
 
       const isMine =
-        message.uid ===
+        message?.uid ===
         currentUser?.uid;
 
 
@@ -2778,7 +2780,7 @@ function renderMessages(
         isMine
           ? "Vous"
           : (
-              message.name ||
+              message?.name ||
               "Anonyme"
             );
 
@@ -2793,11 +2795,6 @@ function renderMessages(
         "message-bubble";
 
 
-      /*
-         Le texte reste dans textContent :
-         aucune injection HTML.
-      */
-
       const text =
         document.createElement(
           "span"
@@ -2805,7 +2802,7 @@ function renderMessages(
 
 
       text.textContent =
-        message.text ||
+        message?.text ||
         "";
 
 
@@ -2813,10 +2810,6 @@ function renderMessages(
         text
       );
 
-
-      /*
-         Heure type WhatsApp.
-      */
 
       const time =
         document.createElement(
@@ -2830,7 +2823,7 @@ function renderMessages(
 
       time.textContent =
         formatMessageTime(
-          message.timestamp
+          message?.timestamp
         );
 
 
@@ -2857,11 +2850,6 @@ function renderMessages(
   );
 
 
-  /*
-     Défilement seulement après
-     le rendu des messages.
-  */
-
   requestAnimationFrame(
     () => {
 
@@ -2879,14 +2867,16 @@ function renderMessages(
 
 async function sendMessage() {
 
+  /*
+     Ne plus afficher "Connexion en cours".
+  */
+
   if (!currentUser) {
 
-    toast(
-      "Connexion en cours...",
-      "⏳"
-    );
+    currentUser =
+      createLocalUser();
 
-    return;
+    loadUnreadMessages();
   }
 
 
@@ -2917,120 +2907,125 @@ async function sendMessage() {
     return;
 
 
-  /*
-     On mémorise la valeur avant
-     toute opération réseau.
-  */
-
   input.value = "";
 
 
-  try {
+  const timestamp =
+    Date.now();
 
-    const messageRef =
-      push(
 
-        ref(
-          db,
-          `messages/${currentGroupCode}`
-        )
+  const name =
+    localStorage.getItem(
+      "anonybox_username"
+    ) ||
+    "Anonyme";
 
+
+  /*
+     Firebase.
+  */
+
+  if (
+    firebaseAvailable &&
+    firebaseAuthReady &&
+    db &&
+    !currentUser.isLocal
+  ) {
+
+    try {
+
+      const messageRef =
+        push(
+          ref(
+            db,
+            `messages/${currentGroupCode}`
+          )
+        );
+
+
+      await set(
+        messageRef,
+        {
+          text,
+
+          name,
+
+          uid:
+            currentUser.uid,
+
+          timestamp
+        }
       );
 
 
-    const name =
-      localStorage.getItem(
-        "anonybox_username"
-      ) ||
-      "Anonyme";
-
-
-    const timestamp =
-      Date.now();
-
-
-    await set(
-
-      messageRef,
-
-      {
-
-        text,
-
-        name,
-
-        uid:
-          currentUser.uid,
-
+      setLastRead(
+        currentGroupCode,
         timestamp
-
-      }
-
-    );
+      );
 
 
-    /*
-       Le point de notification
-       ne doit jamais apparaître
-       pour son propre message.
-    */
+      return;
 
-    setLastRead(
-      currentGroupCode,
-      timestamp
-    );
+    } catch (error) {
 
+      console.error(
+        "Firebase message :",
+        error
+      );
 
-    /*
-       IMPORTANT :
-       on ne fait PAS input.focus()
-       ici.
+    }
 
-       Android garde ainsi beaucoup
-       mieux le clavier ouvert
-       pendant l'envoi.
-    */
-
-
-    requestAnimationFrame(
-      () => {
-
-        const messages =
-          $("messages");
-
-        if (messages) {
-
-          messages.scrollTop =
-            messages.scrollHeight;
-
-        }
-
-      }
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Message :",
-      error
-    );
-
-
-    /*
-       Restaurer le texte
-       si l'envoi échoue.
-    */
-
-    input.value =
-      text;
-
-
-    toast(
-      "Message non envoyé",
-      "!"
-    );
   }
+
+
+  /*
+     Mode local.
+  */
+
+  const messages =
+    getLocalMessages(
+      currentGroupCode
+    );
+
+
+  const id =
+    "local_" +
+    timestamp +
+    "_" +
+    Math.random()
+      .toString(36)
+      .substring(2, 7);
+
+
+  messages[id] = {
+
+    text,
+
+    name,
+
+    uid:
+      currentUser.uid,
+
+    timestamp
+
+  };
+
+
+  saveLocalMessages(
+    currentGroupCode,
+    messages
+  );
+
+
+  renderMessages(
+    messages
+  );
+
+
+  setLastRead(
+    currentGroupCode,
+    timestamp
+  );
 }
 
 
@@ -3101,20 +3096,12 @@ $("save-profile")
   );
 
 
-/* =========================================================
-   RETOUR
-========================================================= */
-
 $("chat-back-button")
   ?.addEventListener(
     "click",
     closeChat
   );
 
-
-/* =========================================================
-   MENU
-========================================================= */
 
 $("chat-menu-button")
   ?.addEventListener(
@@ -3128,10 +3115,6 @@ $("chat-menu-button")
     }
   );
 
-
-/* =========================================================
-   INFO
-========================================================= */
 
 $("menu-group-info")
   ?.addEventListener(
@@ -3147,20 +3130,12 @@ $("group-info-close")
   );
 
 
-/* =========================================================
-   COPIER
-========================================================= */
-
 $("menu-copy-code")
   ?.addEventListener(
     "click",
     copyCode
   );
 
-
-/* =========================================================
-   QUITTER
-========================================================= */
 
 $("menu-leave-group")
   ?.addEventListener(
@@ -3169,20 +3144,12 @@ $("menu-leave-group")
   );
 
 
-/* =========================================================
-   SUPPRIMER
-========================================================= */
-
 $("menu-delete-group")
   ?.addEventListener(
     "click",
     askDelete
   );
 
-
-/* =========================================================
-   CONFIRMATION
-========================================================= */
 
 $("confirm-cancel")
   ?.addEventListener(
@@ -3193,9 +3160,7 @@ $("confirm-cancel")
 
 $("confirm-ok")
   ?.addEventListener(
-
     "click",
-
     async () => {
 
       const callback =
@@ -3205,20 +3170,12 @@ $("confirm-ok")
       closeConfirmation();
 
 
-      if (callback) {
-
+      if (callback)
         await callback();
 
-      }
-
     }
-
   );
 
-
-/* =========================================================
-   ENVOYER
-========================================================= */
 
 $("send-button")
   ?.addEventListener(
@@ -3229,9 +3186,7 @@ $("send-button")
 
 $("message-input")
   ?.addEventListener(
-
     "keydown",
-
     event => {
 
       if (
@@ -3246,7 +3201,6 @@ $("message-input")
       }
 
     }
-
   );
 
 
@@ -3315,102 +3269,176 @@ document.addEventListener(
    FIREBASE AUTH
 ========================================================= */
 
-onAuthStateChanged(
+if (
+  firebaseAvailable &&
+  auth
+) {
 
-  auth,
+  onAuthStateChanged(
+    auth,
+    user => {
 
-  user => {
+      if (user) {
 
-    if (user) {
+        currentUser =
+          user;
+
+        firebaseAuthReady =
+          true;
+
+
+        window.anonyboxReady =
+          true;
+
+
+        console.log(
+          "Firebase connecté :",
+          user.uid
+        );
+
+
+        loadUnreadMessages();
+
+        renderSavedGroups();
+
+        loadGroups();
+
+        loadProfile();
+
+
+      } else {
+
+        /*
+           Pas d'utilisateur Firebase :
+           on passe automatiquement en local.
+        */
+
+        if (!currentUser) {
+
+          currentUser =
+            createLocalUser();
+
+        }
+
+
+        firebaseAuthReady =
+          false;
+
+
+        window.anonyboxReady =
+          true;
+
+
+        loadUnreadMessages();
+
+        renderSavedGroups();
+
+        loadProfile();
+
+
+        console.log(
+          "Mode local activé."
+        );
+
+      }
+
+    }
+  );
+
+
+  /*
+     Connexion anonyme.
+  */
+
+  signInAnonymously(
+    auth
+  )
+
+  .then(
+    () => {
+
+      console.log(
+        "Connexion anonyme demandée."
+      );
+
+    }
+  )
+
+  .catch(
+    error => {
+
+      console.error(
+        "Firebase Auth :",
+        error
+      );
+
+
+      /*
+         IMPORTANT :
+         on ne bloque plus l'application.
+      */
+
+      firebaseAuthReady =
+        false;
+
 
       currentUser =
-        user;
+        createLocalUser();
 
 
       window.anonyboxReady =
         true;
 
 
-      console.log(
-        "Firebase connecté :",
-        user.uid
-      );
-
-
       loadUnreadMessages();
 
-
       renderSavedGroups();
-
-
-      loadGroups();
-
 
       loadProfile();
 
 
-    } else {
-
-      currentUser =
-        null;
-
-
-      window.anonyboxReady =
-        false;
+      toast(
+        "Mode hors connexion activé",
+        "📱"
+      );
 
     }
+  );
 
-  }
+} else {
 
-);
+  /*
+     Firebase complètement indisponible.
+  */
 
-
-/* =========================================================
-   CONNEXION ANONYME
-========================================================= */
-
-signInAnonymously(
-  auth
-)
-
-.then(
-  () => {
-
-    console.log(
-      "Connexion anonyme réussie"
-    );
-
-  }
-)
-
-.catch(
-  error => {
-
-    console.error(
-      "Firebase Auth :",
-      error
-    );
+  currentUser =
+    createLocalUser();
 
 
-    toast(
-      "Mode local activé",
-      "📱"
-    );
+  window.anonyboxReady =
+    true;
 
 
-    renderSavedGroups();
+  loadUnreadMessages();
 
-  }
-);
+  renderSavedGroups();
+
+  loadProfile();
+
+
+  console.log(
+    "AnonyBoX fonctionne en mode local."
+  );
+}
 
 
 /* =========================================================
-   DÉMARRAGE
+   DÉMARRAGE IMMÉDIAT
 ========================================================= */
 
 showHome();
 
 
 console.log(
-  "AnonyBoX démarré — version moderne"
+  "AnonyBoX démarré — version stable"
 );
