@@ -41,7 +41,7 @@
   ====================================================== -->
 
   <section
-    id="home-screen"
+    id="homeScreen"
     class="screen home-screen"
   >
 
@@ -50,7 +50,7 @@
       <div class="brand">
 
         <div class="logo">
-          A
+          👻
         </div>
 
         <div class="brand-text">
@@ -73,7 +73,7 @@
         type="button"
         aria-label="Ouvrir le profil"
       >
-        
+        👤
       </button>
 
     </header>
@@ -89,7 +89,7 @@
       <div class="hero-glow"></div>
 
       <div class="hero-icon">
-        
+        👻
       </div>
 
       <p class="hero-label">
@@ -120,10 +120,11 @@
         id="create-group-button"
         class="main-action"
         type="button"
+        data-create-group
       >
 
         <span class="action-icon">
-          
+          ➕
         </span>
 
         <span class="action-text">
@@ -149,10 +150,11 @@
         id="join-button"
         class="secondary-action"
         type="button"
+        data-join-group
       >
 
         <span class="action-icon">
-          
+          🔗
         </span>
 
         <span class="action-text">
@@ -216,7 +218,7 @@
         >
 
           <div class="empty-icon">
-            
+            👻
           </div>
 
           <h3>
@@ -264,8 +266,9 @@
         class="header-action"
         type="button"
         aria-label="Créer un groupe"
+        data-create-group
       >
-        
+        ➕
       </button>
 
     </header>
@@ -274,7 +277,7 @@
     <div class="search-box">
 
       <span>
-        
+        🔎
       </span>
 
       <input
@@ -298,7 +301,7 @@
       >
 
         <div class="empty-icon">
-          
+          👥
         </div>
 
         <h3>
@@ -325,7 +328,7 @@
   ====================================================== -->
 
   <section
-    id="chat-page"
+    id="chatScreen"
     class="chat-page"
     aria-hidden="true"
   >
@@ -337,8 +340,9 @@
         class="chat-back-button"
         type="button"
         aria-label="Retour aux groupes"
+        data-home
       >
-        
+        ←
       </button>
 
 
@@ -352,12 +356,15 @@
           id="chat-avatar"
           class="chat-avatar"
         >
-          
+          👻
         </div>
 
         <div class="chat-group-info">
 
-          <h2 id="chat-title">
+          <h2
+            id="chat-title"
+            data-group-name
+          >
             Discussion
           </h2>
 
@@ -377,7 +384,7 @@
         aria-label="Ouvrir le menu"
         aria-expanded="false"
       >
-        
+        ⋮
       </button>
 
     </header>
@@ -397,7 +404,7 @@
         type="button"
         role="menuitem"
       >
-        <span></span>
+        <span>ℹ️</span>
         <span>Informations du groupe</span>
       </button>
 
@@ -406,8 +413,9 @@
         id="menu-copy-code"
         type="button"
         role="menuitem"
+        data-copy-code
       >
-        <span></span>
+        <span>📋</span>
         <span>Copier le code</span>
       </button>
 
@@ -416,8 +424,9 @@
         id="menu-leave-group"
         type="button"
         role="menuitem"
+        data-leave-group
       >
-        <span></span>
+        <span>🚪</span>
         <span>Quitter le groupe</span>
       </button>
 
@@ -427,8 +436,9 @@
         type="button"
         role="menuitem"
         style="display:none;"
+        data-delete-group
       >
-        <span></span>
+        <span>🗑️</span>
         <span>Supprimer le groupe</span>
       </button>
 
@@ -450,7 +460,7 @@
           type="button"
           aria-label="Fermer"
         >
-          
+          ✕
         </button>
 
         <h2>
@@ -466,10 +476,13 @@
           id="info-group-avatar"
           class="large-group-avatar"
         >
-          
+          👻
         </div>
 
-        <h3 id="info-group-name">
+        <h3
+          id="info-group-name"
+          data-group-name
+        >
           Groupe
         </h3>
 
@@ -481,10 +494,13 @@
         <div class="info-row">
 
           <span>
-             Code
+            🔑 Code
           </span>
 
-          <strong id="info-group-code">
+          <strong
+            id="info-group-code"
+            data-group-code
+          >
             --------
           </strong>
 
@@ -494,10 +510,13 @@
         <div class="info-row">
 
           <span>
-             Membres
+            👥 Membres
           </span>
 
-          <strong id="info-member-count">
+          <strong
+            id="info-member-count"
+            data-members-count
+          >
             0
           </strong>
 
@@ -521,7 +540,7 @@
       >
 
         <div>
-          
+          👻
         </div>
 
         <h3>
@@ -545,18 +564,18 @@
 
         <input
           type="text"
-          id="message-input"
+          id="messageInput"
           placeholder="Écrire un message..."
           autocomplete="off"
           maxlength="1000"
         >
 
         <button
-          id="send-button"
+          id="sendMessageBtn"
           type="button"
           aria-label="Envoyer le message"
         >
-          
+          ➤
         </button>
 
       </div>
@@ -595,7 +614,7 @@
     <div class="profile-card">
 
       <div class="profile-icon">
-        
+        👤
       </div>
 
       <h3>
@@ -628,7 +647,7 @@
         id="save-profile"
         type="button"
       >
-        Enregistrer
+        💾 Enregistrer
       </button>
 
     </div>
@@ -657,7 +676,7 @@
       id="confirm-icon"
       class="confirm-icon"
     >
-      
+      ⚠️
     </div>
 
     <h3 id="confirm-title">
@@ -706,7 +725,7 @@
 >
 
   <span id="toast-icon">
-    
+    ✓
   </span>
 
   <span id="toast-message">
@@ -729,10 +748,11 @@
     id="home-nav"
     class="nav-active"
     type="button"
+    data-home
   >
 
     <span>
-      
+      🏠
     </span>
 
     <small>
@@ -748,7 +768,7 @@
   >
 
     <span>
-      
+      👥
     </span>
 
     <small>
@@ -764,7 +784,7 @@
   >
 
     <span>
-      
+      👤
     </span>
 
     <small>
@@ -786,4 +806,4 @@
 ></script>
 
 </body>
-      </html>
+          </html>
